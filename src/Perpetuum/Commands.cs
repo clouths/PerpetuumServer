@@ -5406,7 +5406,7 @@ namespace Perpetuum
             AccessLevel = AccessLevel.admin,
             Arguments =
             {
-                new Argument<string>(k.accountID)
+                new Argument<int>(k.accountID)
             }
         };
 

@@ -41,6 +41,7 @@ namespace Perpetuum.Accounting
                     {k.isEarlyAccess,false},
                     {k.validUntil, ValidUntil},
                     {k.email,Email},
+                    {k.emailConfirmed, EmailConfirmed },
                     {k.credit,Credit},
                     {"twitchAuthToken",TwitchAuthToken},
                     {k.banLength, (int)BanLength.TotalSeconds },
@@ -56,7 +57,7 @@ namespace Perpetuum.Accounting
         /// </summary>
         public void ForceConfirmEmail()
         {
-            Db.Query().CommandText("UPDATE accounts SET EmailConfirmed = 1 WHERE Id = @id")
+            Db.Query().CommandText("UPDATE accounts SET EmailConfirmed = 1 WHERE accountID = @id")
                 .SetParameter("@id", this.Id)
                 .ExecuteNonQuery();
 
