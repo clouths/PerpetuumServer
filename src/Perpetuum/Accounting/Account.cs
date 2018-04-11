@@ -1,3 +1,4 @@
+using Perpetuum.Data;
 using System;
 using System.Collections.Generic;
 
@@ -48,6 +49,18 @@ namespace Perpetuum.Accounting
                 };
 
             return dictionary;
+        }
+
+        /// <summary>
+        /// Force confirmation of an email address in the database.
+        /// </summary>
+        public void ForceConfirmEmail()
+        {
+            Db.Query().CommandText("UPDATE accounts SET EmailConfirmed = 1 WHERE Id = @id")
+                .SetParameter("@id", this.Id)
+                .ExecuteNonQuery();
+
+            this.EmailConfirmed = true;
         }
     }
 }
