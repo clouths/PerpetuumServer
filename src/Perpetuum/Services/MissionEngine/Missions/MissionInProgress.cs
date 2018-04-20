@@ -405,7 +405,7 @@ namespace Perpetuum.Services.MissionEngine.Missions
 
             if (myLocation.ZoneConfig.IsAlpha) //TODO: Fixme -- Alpha as neutral-assumption
             {
-                _selectedRace = races.Where(r => r != myLocation.RaceId).RandomElement();
+                _selectedRace = races.RandomElement();
             }
             else if (FastRandom.NextDouble() > 0.25)
             {
