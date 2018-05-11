@@ -996,6 +996,7 @@ namespace Perpetuum.Bootstrapper
             RegisterEntity<CreditActivator>();
             RegisterEntity<SparkActivator>();
             RegisterEntity<Gift>();
+            RegisterEntity<Paint>();//TODO register new entitydef
 
             _builder.Register<Func<EntityDefault,Entity>>(x =>
             {
@@ -1248,6 +1249,9 @@ namespace Perpetuum.Bootstrapper
                 ByName<RandomRiftPortal>(DefinitionNames.RANDOM_RIFT_PORTAL);
                 ByName<ItemShop>(DefinitionNames.BASE_ITEM_SHOP);
                 ByName<Gift>(DefinitionNames.ANNIVERSARY_PACKAGE);
+
+                //TODO new for paint
+                ByName<Paint>("def_paint_test");
 
                 var c = b.Build();
 
@@ -1862,6 +1866,9 @@ namespace Perpetuum.Bootstrapper
             RegisterRequestHandler<GetHighScores>(Commands.GetHighScores);
             RegisterRequestHandler<GetMyHighScores>(Commands.GetMyHighScores);
             RegisterRequestHandler<ZoneSectorList>(Commands.ZoneSectorList).SingleInstance();
+
+            //TODO: new paint use registerhandler
+            RegisterRequestHandler<PaintUse>(Commands.PaintUse);
 
             RegisterRequestHandler<ListContainer>(Commands.ListContainer);
 

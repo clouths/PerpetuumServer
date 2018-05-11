@@ -18,16 +18,31 @@ namespace Perpetuum.RequestHandlers
 
         public void HandleRequest(IRequest request)
         {
+            var itemEid = request.Data.GetOrDefault<long>(k.eid);
+            var item = this._entityServices.Repository.Load(itemEid);
+            if (item is Gift)
+            {
+                this.handleGift(request, itemEid);
+            }
+            else if (item is Paint) //TODO this is here until we can build a good category flag? ??How are requests routed?
+            {
+                this.handlePaint(request, itemEid);
+            }
+
+        }
+
+
+        private void handleGift(IRequest request, long giftEid)
+        {
             using (var scope = Db.CreateTransaction())
             {
-                var giftEid = request.Data.GetOrDefault<long>(k.eid);
                 var character = request.Session.Character;
 
                 character.IsDocked.ThrowIfFalse(ErrorCodes.CharacterHasToBeDocked);
 
                 var publicContainer = character.GetPublicContainerWithItems();
-                var giftItem = (Gift)publicContainer.GetItemOrThrow(giftEid,true).Unstack(1);
-                var randomItem = giftItem.Open(publicContainer,character);
+                var giftItem = (Gift)publicContainer.GetItemOrThrow(giftEid, true).Unstack(1);
+                var randomItem = giftItem.Open(publicContainer, character);
                 _entityServices.Repository.Delete(giftItem);
                 publicContainer.Save();
 
@@ -48,7 +63,29 @@ namespace Perpetuum.RequestHandlers
                 };
 
                 Transaction.Current.OnCommited(() => Message.Builder.FromRequest(request).WithData(result).Send());
-                
+
+                scope.Complete();
+            }
+        }
+
+        private void handlePaint(IRequest request, long paintEid)
+        {
+            using (var scope = Db.CreateTransaction())
+            {
+                var character = request.Session.Character;
+
+                var robot = character.GetActiveRobot();
+                var container = robot.GetContainer();
+                container.ThrowIfNull(ErrorCodes.RobotMustbeSingleAndNonRepacked);
+
+                var paintItem = (Paint)container.GetItemOrThrow(paintEid, true).Unstack(1);
+                paintItem.Activate(container, character);
+                _entityServices.Repository.Delete(paintItem);
+                container.Save();
+
+                var result = new Dictionary<string, object> { { k.robot, robot.ToDictionary() }, { k.container, container.ToDictionary() } };
+                Transaction.Current.OnCommited(() => Message.Builder.FromRequest(request).WithData(result).Send());
+
                 scope.Complete();
             }
         }

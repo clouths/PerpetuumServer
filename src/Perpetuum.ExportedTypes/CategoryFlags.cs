@@ -618,6 +618,7 @@ namespace Perpetuum.ExportedTypes
 		cf_world_mobile_teleport_capsule = 0x0000000000020198,
 		cf_zone_item_shop = 0x0000000000000796,
 		cf_zone_objects = 0x0000000000000092,
-		def_pbs_dogtags = 0x0000000000000691
-	}
+		def_pbs_dogtags = 0x0000000000000691,
+        cf_paint = 0x0000000000000315 // TODO new for paint
+    }
 }
