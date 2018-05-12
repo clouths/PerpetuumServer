@@ -12,17 +12,17 @@ namespace Perpetuum.Items
 {
     public class Paint : Item
     {
-
-        static Paint()
+        private readonly RobotHelper _robotHelper;
+        public Paint(RobotHelper helper)
         {
-
+            this._robotHelper = helper;
         }
 
         public void Activate(RobotInventory targetContainer, Character character)
         {
-            targetContainer.CheckParentRobotAndThrowIfFailed(character.Eid);
-            var robot = targetContainer.GetOrLoadParentEntity() as Robot;
-            robot.Tint = this.ED.Config.Tint;
+            var robot = _robotHelper.LoadRobotForCharacter(targetContainer.GetOrLoadParentEntity().Eid, character, true);
+            robot.ThrowIfNull(ErrorCodes.NoRobotFound);
+            robot.DynamicProperties.Update(k.tint, this.ED.Config.Tint);
             robot.Save();
         }
 
