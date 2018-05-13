@@ -520,6 +520,13 @@ namespace Perpetuum.Players
                             }
                         }
 
+                        //Check if paint was applied
+                        if(this.ED.Config.Tint != this.Tint)
+                        {
+                            //TODO -- PaintHelper to get the right paint based on the color
+                            lootItems.Add(LootItemBuilder.Create(EntityDefault.GetByName("def_paint_test").Definition).SetQuantity(1).SetDamaged(false).Build());
+                        }
+
                         if (lootItems.Count > 0)
                         {
                             var lootContainer = LootContainer.Create().AddLoot(lootItems).BuildAndAddToZone(zone, CurrentPosition);
