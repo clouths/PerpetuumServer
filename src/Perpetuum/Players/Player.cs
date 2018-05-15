@@ -520,11 +520,20 @@ namespace Perpetuum.Players
                             }
                         }
 
-                        //Check if paint was applied
-                        if(this.ED.Config.Tint != this.Tint)
+                        //Check if paint was applied + paint drop chance
+                        if (this.ED.Config.Tint != this.Tint && LootHelper.Roll(0.5))
                         {
-                            //TODO -- PaintHelper to get the right paint based on the color
-                            lootItems.Add(LootItemBuilder.Create(EntityDefault.GetByName("def_paint_test").Definition).SetQuantity(1).SetDamaged(false).Build());
+                            //Paint Query
+                            //TODO: performance => cache paints in static collection
+                            //TODO: performance => cache if painted, and paint entitydef on undock
+                            EntityDefault paint = EntityDefault.Reader.GetAll()
+                                .Where(i => i.CategoryFlags == CategoryFlags.cf_lottery_items)
+                                .Where(i => i.Config.Tint == this.Tint)
+                                .Where(i => i.Name.Contains("paint")).First();
+                            if (paint != null)
+                            {
+                                lootItems.Add(LootItemBuilder.Create(paint.Definition).SetQuantity(1).SetDamaged(false).Build());
+                            }
                         }
 
                         if (lootItems.Count > 0)

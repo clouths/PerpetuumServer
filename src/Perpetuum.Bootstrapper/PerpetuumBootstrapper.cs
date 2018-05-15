@@ -1023,6 +1023,19 @@ namespace Perpetuum.Bootstrapper
                     ByDefinition<T>(ed.Definition, parameters);
                 }
 
+                //TODO: new for paint
+                void ByNamePatternAndFlag<T>(string substr, CategoryFlags cf, params Parameter[] parameters) where T : Entity
+                {
+                    //TODO: this might be expensive -- string matching all defaults
+                    var matches = ctx.Resolve<IEntityDefaultReader>().GetAll()
+                    .Where(i => i.CategoryFlags == cf)
+                    .Where(i => i.Name.Contains(substr));
+                    foreach (var ed in matches)
+                    {
+                        ByDefinition<T>(ed.Definition, parameters);
+                    }
+                }
+
                 ByName<LootContainer>(DefinitionNames.LOOT_CONTAINER_OBJECT);
                 ByName<FieldContainer>(DefinitionNames.FIELD_CONTAINER);
                 ByName<MissionContainer>(DefinitionNames.MISSION_CONTAINER);
@@ -1190,6 +1203,10 @@ namespace Perpetuum.Bootstrapper
                 ByCategoryFlags<RandomResearchKit>(CategoryFlags.cf_random_research_kits);
                 ByCategoryFlags<LotteryItem>(CategoryFlags.cf_lottery_items);
 
+                //TODO ORDER MATTERS!  Register Paints AFTER lottery will ensure Paint objects are valid subset of lottery category
+                //TODO entitydefaults must contain name "def_paint" and have cf_lottery_items 
+                ByNamePatternAndFlag<Paint>("def_paint", CategoryFlags.cf_lottery_items);
+
                 ByCategoryFlags<VisibilityBasedProbeDeployer>(CategoryFlags.cf_proximity_probe_deployer);
                 ByCategoryFlags<Item>(CategoryFlags.cf_gift_packages);
                 ByCategoryFlags<PBSDeployer>(CategoryFlags.cf_pbs_capsules);
@@ -1249,9 +1266,6 @@ namespace Perpetuum.Bootstrapper
                 ByName<RandomRiftPortal>(DefinitionNames.RANDOM_RIFT_PORTAL);
                 ByName<ItemShop>(DefinitionNames.BASE_ITEM_SHOP);
                 ByName<Gift>(DefinitionNames.ANNIVERSARY_PACKAGE);
-
-                //TODO new for paint
-                ByName<Paint>("def_paint_test");
 
                 var c = b.Build();
 
@@ -1866,9 +1880,6 @@ namespace Perpetuum.Bootstrapper
             RegisterRequestHandler<GetHighScores>(Commands.GetHighScores);
             RegisterRequestHandler<GetMyHighScores>(Commands.GetMyHighScores);
             RegisterRequestHandler<ZoneSectorList>(Commands.ZoneSectorList).SingleInstance();
-
-            //TODO: new paint use registerhandler
-            RegisterRequestHandler<PaintUse>(Commands.PaintUse);
 
             RegisterRequestHandler<ListContainer>(Commands.ListContainer);
 

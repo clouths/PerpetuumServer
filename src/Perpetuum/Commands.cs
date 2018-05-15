@@ -2286,17 +2286,6 @@ namespace Perpetuum
             }
         };
 
-        //TODO new paintuse command
-        public static readonly Command PaintUse = new Command
-        {
-            Text = "paintUse",
-            AccessLevel = AccessLevel.normal,
-            Arguments =
-            {
-                new Argument<long>(k.eid)
-            }
-        };
-
         public static readonly Command IntrusionSAPSubmitItem = new Command
         {
             Text = "intrusionSAPSubmitItem",

@@ -101,7 +101,7 @@ namespace Perpetuum.RequestHandlers
                 character.IsDocked.ThrowIfFalse(ErrorCodes.CharacterHasToBeDocked);
 
                 var container = Container.GetWithItems(containerEid, character);
-                container.ThrowIfNotType<RobotInventory>(ErrorCodes.NoRobotFound); //TODO better error to indicate item not being activated in robot cargo
+                container.ThrowIfNotType<RobotInventory>(ErrorCodes.RobotMustBeSelected); //TODO better error to indicate item not being activated in robot cargo
 
                 var paintItem = (Paint)container.GetItemOrThrow(paintEid, true).Unstack(1);
                 paintItem.Activate(container as RobotInventory, character);
@@ -110,9 +110,13 @@ namespace Perpetuum.RequestHandlers
 
                 Transaction.Current.OnCommited(() =>
                 {
+                    //Send custom message back in "Redeemables" dialog
+                    var paintDict = paintItem.ToDictionary();
+                    paintDict[k.quantity] = -1;  //Indicate the consumption of item from stack
                     var result = new Dictionary<string, object>
                     {
-                        { k.container, container.ToDictionary() } 
+                        { k.container, container.ToDictionary() },
+                        { k.item, paintDict}
                     };
                     Message.Builder.FromRequest(request).WithData(result).Send();
                 });
