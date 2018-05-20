@@ -22,7 +22,8 @@ namespace Perpetuum.Items
         {
             var robot = _robotHelper.LoadRobotForCharacter(targetContainer.GetOrLoadParentEntity().Eid, character, true);
             robot.ThrowIfNull(ErrorCodes.NoRobotFound);
-            robot.DynamicProperties.Update(k.tint, this.ED.Config.Tint);
+            robot.DynamicProperties.Update(k.tint, this.ED.Config.Tint); //Apply color
+            robot.DynamicProperties.Update(k.decay, 255); //Reset Decay
             robot.Save();
         }
 
