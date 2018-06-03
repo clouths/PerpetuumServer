@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Perpetuum.Accounting.Characters;
-using Perpetuum.Data;
 using Perpetuum.EntityFramework;
 using Perpetuum.ExportedTypes;
 using Perpetuum.Groups.Corporations;
