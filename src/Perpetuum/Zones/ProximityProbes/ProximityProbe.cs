@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Perpetuum.Accounting.Characters;
+using Perpetuum.Data;
 using Perpetuum.EntityFramework;
 using Perpetuum.ExportedTypes;
 using Perpetuum.Groups.Corporations;
@@ -45,6 +46,7 @@ namespace Perpetuum.Zones.ProximityProbes
         public void SetDespawnTime(TimeSpan despawnTime)
         {
             _despawnHelper = UnitDespawnHelper.Create(this, despawnTime);
+            _despawnHelper.DespawnStrategy = Kill;
         }
 
         protected internal override void UpdatePlayerVisibility(Player player)
@@ -76,6 +78,13 @@ namespace Perpetuum.Zones.ProximityProbes
 
                 //do something
                 OnUnitsFound(robotsNearMe);
+            }
+
+            if (_despawnHelper == null)
+            {
+                var m = GetPropertyModifier(AggregateField.despawn_time);
+                var timespan = TimeSpan.FromMilliseconds((int)m.Value);
+                SetDespawnTime(timespan);
             }
 
             _despawnHelper.Update(time, this);
@@ -119,11 +128,8 @@ namespace Perpetuum.Zones.ProximityProbes
         {
             //uccso info a regisztraltaknak
             SendProbeDead();
-
             PBSRegisterHelper.ClearMembersFromSql(Eid);
-
             Zone.UnitService.RemoveUserUnit(this);
-            
             Logger.Info("probe got deleted " + Eid);
         }
         
