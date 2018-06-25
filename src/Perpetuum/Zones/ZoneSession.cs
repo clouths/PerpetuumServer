@@ -291,10 +291,7 @@ namespace Perpetuum.Zones
 
         private TerrainUpdateNotifier CreateTerrainNotifier(Player player)
         {
-            var layerTypes = _zone.Configuration.Terraformable ? new[] { LayerType.Altitude, LayerType.Blocks, LayerType.Control, LayerType.Plants } : 
-                                                                 new[] { LayerType.Blocks, LayerType.Plants, LayerType.Control };
-
-            return new TerrainUpdateNotifier(_zone,player,layerTypes);
+            return new TerrainUpdateNotifier(_zone, player, new[] { LayerType.Altitude, LayerType.Blocks, LayerType.Control, LayerType.Plants });
         }
 
         private void HandleClientUpdate(Packet packet)
