@@ -354,7 +354,20 @@ namespace Perpetuum.Zones.Intrusion
 
                     if (winnerCorporation is PrivateCorporation)
                     {
-                        if (winnerCorporation.Eid == siteInfo.Owner)
+                        //Compare the Owner and Winner corp's relations
+                        var ownerEid = siteInfo.Owner ?? default(long);
+                        var ownerAndWinnerGoodRelation = false;
+
+                        //Use the dockingLimit if set and positive, or default to positive value
+                        var dockingLimit = siteInfo.DockingStandingLimit == null ? 1 : Math.Min((double)siteInfo.DockingStandingLimit, 1);
+
+                        //Compare both relations between corps: 
+                        //True IFF both corps have strictly positive relations with eachother that are greater than the outpost's dockingLimit, if set!
+                        ownerAndWinnerGoodRelation = _corporationManager.IsStandingMatch(winnerCorporation.Eid, ownerEid, dockingLimit);
+                        ownerAndWinnerGoodRelation = _corporationManager.IsStandingMatch(ownerEid, winnerCorporation.Eid, dockingLimit) && ownerAndWinnerGoodRelation;
+
+                        //Stability increase if winner is owner OR winner is in good standing with owner
+                        if (winnerCorporation.Eid == siteInfo.Owner || ownerAndWinnerGoodRelation)
                         {
                             newStability = (newStability + sap.StabilityChange).Clamp(0, 100);
                         }
