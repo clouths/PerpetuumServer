@@ -358,8 +358,8 @@ namespace Perpetuum.Zones.Intrusion
                         var ownerEid = siteInfo.Owner ?? default(long);
                         var ownerAndWinnerGoodRelation = false;
 
-                        //Use the dockingLimit if set and positive, or default to positive value
-                        var dockingLimit = siteInfo.DockingStandingLimit == null ? 1 : Math.Min((double)siteInfo.DockingStandingLimit, 1);
+                        //Use the dockingLimit if set and positive, or default to positive value [1-10]
+                        var dockingLimit = siteInfo.DockingStandingLimit == null ? 1 : Math.Max(Math.Min((double)siteInfo.DockingStandingLimit, 10), 1);
 
                         //Compare both relations between corps: 
                         //True IFF both corps have strictly positive relations with eachother that are greater than the outpost's dockingLimit, if set!
