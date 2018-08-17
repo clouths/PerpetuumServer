@@ -104,6 +104,18 @@ namespace Perpetuum.Accounting
         private const double BOOSTEXPONENT = 1.5;
         private const double SERVER_DESIRED_EP_LEVEL = 500000;
 
+        private static int EPBonusBoost;
+
+        public void SetServerEPBonusEvent(int bonusAmount)
+        {
+            EPBonusBoost = bonusAmount;
+        }
+
+        public int GetCurrentServerEPBoost()
+        {
+            return EPBonusBoost;
+        }
+
         public IDictionary<string,object> GetEPData(Account account,Character character)
         {
             var availablePoints = CalculateCurrentEp(account);
@@ -132,7 +144,7 @@ namespace Perpetuum.Accounting
 
         private static double GetBoostMultiplier(double boostFactor)
         {
-            return (BOOSTMULTIPLIERMAX - 1) * boostFactor;
+            return (BOOSTMULTIPLIERMAX + EPBonusBoost - 1) * boostFactor;
         }
 
         private static double GetExperienceBoostingFactor(int collectedEpSum,double epLevelThreshold)
