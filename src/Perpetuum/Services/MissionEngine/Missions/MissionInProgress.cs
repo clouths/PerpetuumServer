@@ -1466,6 +1466,10 @@ namespace Perpetuum.Services.MissionEngine.Missions
 
         private double computeParticipantBonusMultiplier(int paricipantCount)
         {
+            if (paricipantCount < 2)
+            {
+                return 1.0;
+            }
             //TODO expose parameter in DB
             //Modify total reward by participants
             //Clamp participant count to [1,MaxmimalGangParticipants]
