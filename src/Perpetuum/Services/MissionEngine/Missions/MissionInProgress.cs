@@ -1466,14 +1466,14 @@ namespace Perpetuum.Services.MissionEngine.Missions
 
         private double computeParticipantBonusMultiplier(int paricipantCount)
         {
+            //Solo or squad of 1 and initial estimate
             if (paricipantCount < 2)
             {
                 return 1.0;
             }
-            //TODO expose parameter in DB
             //Modify total reward by participants
             //Clamp participant count to [1,MaxmimalGangParticipants]
-            double participantBonus = 0.05;
+            double participantBonus = 0.05;  //TODO expose parameter in DB
             int participantCount = Math.Min(MaxmimalGangParticipants, Math.Max(1, paricipantCount));
             double participantModifier = 1 + participantCount * participantBonus;
             return  participantModifier;
