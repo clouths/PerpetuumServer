@@ -19,8 +19,7 @@ namespace Perpetuum.Accounting
         int CalculateCurrentEp(Account account);
         IDictionary<string, object> GetEPData(Account account, Character character);
         void FreeLockedEp(Account account, int amount);
-        void SetServerEPBonusEvent(int amount);
-        int GetCurrentServerEPBoost();
+        void SetEPBonusBoost(int amount);
 
         void InsertExtensionRemoveLog(Account account, Character character, int extensionId, int extensionLevel,int points);
         void AddExtensionPointsSpent(Account account, Character character, int spentPoints, int extensionID,int extensionLevel);

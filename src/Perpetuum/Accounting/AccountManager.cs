@@ -106,14 +106,9 @@ namespace Perpetuum.Accounting
 
         private static int EPBonusBoost;
 
-        public void SetServerEPBonusEvent(int bonusAmount)
+        public void SetEPBonusBoost(int bonusAmount)
         {
             EPBonusBoost = bonusAmount;
-        }
-
-        public int GetCurrentServerEPBoost()
-        {
-            return EPBonusBoost;
         }
 
         public IDictionary<string,object> GetEPData(Account account,Character character)

@@ -9,9 +9,9 @@ namespace Perpetuum.RequestHandlers.Extensions
     public class EPBonusEvent : IRequestHandler
     {
         private readonly EPBonusEventService _eventService;
-        private TimeSpan MAX_DURATION = TimeSpan.FromDays(7);
+        private TimeSpan MAX_DURATION = TimeSpan.FromDays(14);
         private int MIN_BONUS = 0;
-        private int MAX_BONUS = 15;
+        private int MAX_BONUS = 25;
 
         public EPBonusEvent(EPBonusEventService eventService)
         {
@@ -26,8 +26,8 @@ namespace Perpetuum.RequestHandlers.Extensions
                 var durationHours = request.Data.GetOrDefault<int>(k.duration);
 
                 var checkArgs = bonusAmount >= MIN_BONUS && bonusAmount <= MAX_BONUS;
-                checkArgs = checkArgs && durationHours <= MAX_DURATION.Hours;
-                checkArgs.ThrowIfFalse(ErrorCodes.RequiredArgumentIsNotSpecified);
+                checkArgs = checkArgs && durationHours <= MAX_DURATION.TotalHours;
+                checkArgs.ThrowIfFalse(ErrorCodes.InputTooHigh);
 
                 _eventService.SetEvent(bonusAmount, TimeSpan.FromHours(durationHours));
 

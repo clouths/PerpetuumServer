@@ -12,7 +12,7 @@ namespace Perpetuum.Services.EventServices
     public class EPBonusEventService : Process
     {
         private IAccountManager _accountManager;
-        private TimeTracker _timer;
+        private TimerAction _timer;
 
         public EPBonusEventService(IAccountManager accountManager)
         {
@@ -21,16 +21,21 @@ namespace Perpetuum.Services.EventServices
 
         public void SetEvent(int bonus, TimeSpan duration)
         {
-            _accountManager.SetServerEPBonusEvent(bonus);
-            _timer = new TimeTracker(duration);
+            _accountManager.SetEPBonusBoost(bonus);
+            _timer = new TimerAction(DoClearBonus, duration, true);
+        }
+
+        private void DoClearBonus()
+        {
+            _accountManager.SetEPBonusBoost(0);
+            _timer = null;
         }
 
         public override void Update(TimeSpan time)
         {
-            _timer.Update(time);
-            if (_timer.Expired)
+            if (_timer != null)
             {
-                _accountManager.SetServerEPBonusEvent(0);
+                _timer.Update(time);
             }
         }
     }
