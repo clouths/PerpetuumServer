@@ -1,10 +1,6 @@
 ﻿using Perpetuum.Accounting;
 using Perpetuum.Threading.Process;
-using Perpetuum.Timers;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Perpetuum.Services.EventServices
@@ -12,31 +8,53 @@ namespace Perpetuum.Services.EventServices
     public class EPBonusEventService : Process
     {
         private IAccountManager _accountManager;
-        private TimerAction _timer;
+        private TimeSpan _duration; 
+        private TimeSpan _elapsed; 
+        private bool _eventStarted; 
+        private bool _endingEvent; 
 
         public EPBonusEventService(IAccountManager accountManager)
         {
             _accountManager = accountManager;
+            _eventStarted = false;
+            _endingEvent = false;
+            _duration = TimeSpan.MaxValue;
+            _elapsed = TimeSpan.Zero;
         }
 
         public void SetEvent(int bonus, TimeSpan duration)
         {
+            _duration = duration;
+            _elapsed = TimeSpan.Zero;
             _accountManager.SetEPBonusBoost(bonus);
-            _timer = new TimerAction(DoClearBonus, duration, true);
+            _eventStarted = true;
         }
 
         private void DoClearBonus()
         {
             _accountManager.SetEPBonusBoost(0);
-            _timer = null;
         }
 
         public override void Update(TimeSpan time)
         {
-            if (_timer != null)
+            if (!_eventStarted)
+                return;
+
+            if (_endingEvent)
+                return;
+
+            _elapsed += time;
+
+            if (_elapsed < _duration)
+                return;
+
+            _endingEvent = true;
+            Task.Run(() => DoClearBonus()).ContinueWith(t =>
             {
-                _timer.Update(time);
-            }
+                _eventStarted = false;
+                _endingEvent = false;
+                _elapsed = TimeSpan.Zero;
+            });
         }
     }
 }

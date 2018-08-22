@@ -1630,7 +1630,7 @@ namespace Perpetuum.Bootstrapper
             //TODO new EPBonusEventService 
             _builder.RegisterType<EPBonusEventService>().SingleInstance().OnActivated(e =>
             {
-                e.Context.Resolve<IProcessManager>().AddProcess(e.Instance.ToAsync().AsTimed(TimeSpan.FromSeconds(10)));
+                e.Context.Resolve<IProcessManager>().AddProcess(e.Instance.ToAsync().AsTimed(TimeSpan.FromMinutes(1)));
             });
 
             _builder.RegisterType<Account>();
