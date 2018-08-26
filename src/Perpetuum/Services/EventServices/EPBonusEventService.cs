@@ -7,7 +7,7 @@ namespace Perpetuum.Services.EventServices
 {
     public class EPBonusEventService : Process
     {
-        private IAccountManager _accountManager;
+        private readonly IAccountManager _accountManager;
         private TimeSpan _duration; 
         private TimeSpan _elapsed; 
         private bool _eventStarted; 
@@ -24,15 +24,20 @@ namespace Perpetuum.Services.EventServices
 
         public void SetEvent(int bonus, TimeSpan duration)
         {
-            _duration = duration;
-            _elapsed = TimeSpan.Zero;
             _accountManager.SetEPBonusBoost(bonus);
+            _elapsed = TimeSpan.Zero;
+            _duration = duration;
+            _endingEvent = false;
             _eventStarted = true;
         }
 
-        private void DoClearBonus()
+        private void EndEvent()
         {
             _accountManager.SetEPBonusBoost(0);
+            _elapsed = TimeSpan.Zero;
+            _duration = TimeSpan.MaxValue;
+            _eventStarted = false;
+            _endingEvent = false;
         }
 
         public override void Update(TimeSpan time)
@@ -49,11 +54,9 @@ namespace Perpetuum.Services.EventServices
                 return;
 
             _endingEvent = true;
-            Task.Run(() => DoClearBonus()).ContinueWith(t =>
+            Task.Run(() =>
             {
-                _eventStarted = false;
-                _endingEvent = false;
-                _elapsed = TimeSpan.Zero;
+                EndEvent();
             });
         }
     }

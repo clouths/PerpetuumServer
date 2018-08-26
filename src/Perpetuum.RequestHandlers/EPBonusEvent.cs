@@ -10,8 +10,8 @@ namespace Perpetuum.RequestHandlers.Extensions
     {
         private readonly EPBonusEventService _eventService;
         private TimeSpan MAX_DURATION = TimeSpan.FromDays(14);
-        private int MIN_BONUS = 0;
-        private int MAX_BONUS = 25;
+        private const int MIN_BONUS = 0;
+        private const int MAX_BONUS = 25;
 
         public EPBonusEvent(EPBonusEventService eventService)
         {
