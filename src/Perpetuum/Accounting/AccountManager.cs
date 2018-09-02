@@ -357,21 +357,29 @@ namespace Perpetuum.Accounting
             (affected == 1).ThrowIfFalse(ErrorCodes.SQLInsertError);
         }
 
-        public int AddExtensionPointsBoostAndLog(Account account,Character character,EpForActivityType activityType,int points)
+        //Computes actual boostingFactor for logging
+        private static double ComputeEffectiveBoostFactor(int basePoints, int boostedPoints)
+        {
+            double effectiveBoostFactor = ((double)boostedPoints / (double)basePoints) / (double)BOOSTMULTIPLIERMAX;
+            return effectiveBoostFactor;
+        }
+
+        public int AddExtensionPointsBoostAndLog(Account account, Character character, EpForActivityType activityType, int points)
         {
             if (points <= 0)
                 return 0;
 
             var rawPoints = points;
-            var boostFactor = GetExperienceBoostingFactor(GetExtensionPointsCollected(account),SERVER_DESIRED_EP_LEVEL);
-            var boostedPoints = GetBoostedExtensionPoints(account,points);
+            var boostFactor = GetExperienceBoostingFactor(GetExtensionPointsCollected(account), SERVER_DESIRED_EP_LEVEL);
+            var boostedPoints = GetBoostedExtensionPoints(account, points);
+            var effectiveBoostFactor = ComputeEffectiveBoostFactor(points, boostedPoints);
 
             Transaction.Current.OnCommited(() =>
             {
-                LogEpForActivity(account,character,activityType,rawPoints,boostedPoints,boostFactor);
+                LogEpForActivity(account, character, activityType, rawPoints, boostedPoints, effectiveBoostFactor);
             });
 
-            AddExtensionPoints(account,boostedPoints);
+            AddExtensionPoints(account, boostedPoints);
             return boostedPoints;
         }
 

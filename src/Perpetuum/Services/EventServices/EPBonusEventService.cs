@@ -54,10 +54,7 @@ namespace Perpetuum.Services.EventServices
                 return;
 
             _endingEvent = true;
-            Task.Run(() =>
-            {
-                EndEvent();
-            });
+            Task.Run(() => EndEvent());
         }
     }
 }
