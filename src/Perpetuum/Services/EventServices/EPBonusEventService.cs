@@ -1,5 +1,4 @@
-﻿using Perpetuum.Accounting;
-using Perpetuum.Threading.Process;
+﻿using Perpetuum.Threading.Process;
 using System;
 using System.Threading.Tasks;
 
@@ -7,24 +6,29 @@ namespace Perpetuum.Services.EventServices
 {
     public class EPBonusEventService : Process
     {
-        private readonly IAccountManager _accountManager;
-        private TimeSpan _duration; 
-        private TimeSpan _elapsed; 
-        private bool _eventStarted; 
-        private bool _endingEvent; 
+        private TimeSpan _duration;
+        private TimeSpan _elapsed;
+        private bool _eventStarted;
+        private bool _endingEvent;
+        private volatile int _bonus;
 
-        public EPBonusEventService(IAccountManager accountManager)
+        public EPBonusEventService()
         {
-            _accountManager = accountManager;
+            _bonus = 0;
             _eventStarted = false;
             _endingEvent = false;
             _duration = TimeSpan.MaxValue;
             _elapsed = TimeSpan.Zero;
         }
 
+        public int GetBonus()
+        {
+            return _bonus;
+        }
+
         public void SetEvent(int bonus, TimeSpan duration)
         {
-            _accountManager.SetEPBonusBoost(bonus);
+            _bonus = bonus;
             _elapsed = TimeSpan.Zero;
             _duration = duration;
             _endingEvent = false;
@@ -33,7 +37,7 @@ namespace Perpetuum.Services.EventServices
 
         private void EndEvent()
         {
-            _accountManager.SetEPBonusBoost(0);
+            _bonus = 0;
             _elapsed = TimeSpan.Zero;
             _duration = TimeSpan.MaxValue;
             _eventStarted = false;

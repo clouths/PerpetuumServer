@@ -1625,13 +1625,13 @@ namespace Perpetuum.Bootstrapper
 
             _builder.RegisterType<GoodiePackHandler>();
 
-            _builder.RegisterType<AccountManager>().As<IAccountManager>();
-
             //TODO new EPBonusEventService 
             _builder.RegisterType<EPBonusEventService>().SingleInstance().OnActivated(e =>
             {
                 e.Context.Resolve<IProcessManager>().AddProcess(e.Instance.ToAsync().AsTimed(TimeSpan.FromMinutes(1)));
             });
+
+            _builder.RegisterType<AccountManager>().As<IAccountManager>();
 
             _builder.RegisterType<Account>();
             _builder.RegisterType<AccountWallet>().AsSelf().As<IAccountWallet>();
