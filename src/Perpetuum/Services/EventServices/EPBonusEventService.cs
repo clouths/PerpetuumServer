@@ -10,38 +10,50 @@ namespace Perpetuum.Services.EventServices
         private TimeSpan _elapsed;
         private bool _eventStarted;
         private bool _endingEvent;
-        private volatile int _bonus;
+        private int _bonus;
+        private object _lock = new object();
 
         public EPBonusEventService()
         {
             _bonus = 0;
-            _eventStarted = false;
-            _endingEvent = false;
             _duration = TimeSpan.MaxValue;
             _elapsed = TimeSpan.Zero;
+            _eventStarted = false;
+            _endingEvent = false;
         }
 
         public int GetBonus()
         {
-            return _bonus;
+            lock (_lock)
+            {
+                return _bonus;
+            }
         }
 
         public void SetEvent(int bonus, TimeSpan duration)
         {
-            _bonus = bonus;
-            _elapsed = TimeSpan.Zero;
-            _duration = duration;
+            lock (_lock)
+            {
+                _bonus = bonus;
+                _elapsed = TimeSpan.Zero;
+                _duration = duration;
+            }
+
             _endingEvent = false;
             _eventStarted = true;
         }
 
         private void EndEvent()
         {
-            _bonus = 0;
-            _elapsed = TimeSpan.Zero;
-            _duration = TimeSpan.MaxValue;
             _eventStarted = false;
             _endingEvent = false;
+
+            lock (_lock)
+            {
+                _bonus = 0;
+                _elapsed = TimeSpan.Zero;
+                _duration = TimeSpan.MaxValue;
+            }
         }
 
         public override void Update(TimeSpan time)
@@ -52,10 +64,12 @@ namespace Perpetuum.Services.EventServices
             if (_endingEvent)
                 return;
 
-            _elapsed += time;
-
-            if (_elapsed < _duration)
-                return;
+            lock (_lock)
+            {
+                _elapsed += time;
+                if (_elapsed < _duration)
+                    return;
+            }
 
             _endingEvent = true;
             Task.Run(() => EndEvent());
