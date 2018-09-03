@@ -456,7 +456,7 @@ namespace Perpetuum.Accounting
             };
 
             _epForActivityLogger.Log(epForActivityLogEvent);
-            Logger.Info($"EP4Activity:{activityType} accountId:{account.Id} characterId:{character.Id} raw:{rawPoints} pts:{points} boostFactor:{Math.Round(boostFactor,4)}  boostFactor:{bonusMultiplier}");
+            Logger.Info($"EP4Activity:{activityType} accountId:{account.Id} characterId:{character.Id} raw:{rawPoints} pts:{points} boostFactor:{Math.Round(boostFactor,4)}  bonusMultiplier:{bonusMultiplier}");
         }
 
         public IEnumerable<EpForActivityLogEvent> GetEpForActivityHistory(Account account,DateTime earlier,DateTime later)

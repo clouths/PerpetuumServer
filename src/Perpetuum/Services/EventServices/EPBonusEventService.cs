@@ -22,9 +22,7 @@ namespace Perpetuum.Services.EventServices
         private void Init()
         {
             if (_lock == null)
-            {
                 _lock = new ReaderWriterLockSlim();
-            }
 
             try
             {
@@ -38,18 +36,14 @@ namespace Perpetuum.Services.EventServices
             finally
             {
                 if (_lock.IsWriteLockHeld)
-                {
                     _lock.ExitWriteLock();
-                }
             }
         }
 
         private void Cleanup()
         {
             if (_lock != null)
-            {
                 _lock.Dispose();
-            }
         }
 
         public int GetBonus()
@@ -62,9 +56,7 @@ namespace Perpetuum.Services.EventServices
             finally
             {
                 if (_lock.IsReadLockHeld)
-                {
                     _lock.ExitReadLock();
-                }
             }
         }
 
@@ -82,9 +74,7 @@ namespace Perpetuum.Services.EventServices
             finally
             {
                 if (_lock.IsWriteLockHeld)
-                {
                     _lock.ExitWriteLock();
-                }
             }
         }
 
@@ -102,19 +92,27 @@ namespace Perpetuum.Services.EventServices
             finally
             {
                 if (_lock.IsWriteLockHeld)
-                {
                     _lock.ExitWriteLock();
-                }
             }
         }
 
         public override void Update(TimeSpan time)
         {
-            if (!_eventStarted)
-                return;
+            try
+            {
+                _lock.EnterReadLock();
 
-            if (_endingEvent)
-                return;
+                if (!_eventStarted)
+                    return;
+
+                if (_endingEvent)
+                    return;
+            }
+            finally
+            {
+                if (_lock.IsReadLockHeld)
+                    _lock.ExitReadLock();
+            }
 
             try
             {
@@ -122,16 +120,13 @@ namespace Perpetuum.Services.EventServices
                 _elapsed += time;
                 if (_elapsed < _duration)
                     return;
+                _endingEvent = true;
             }
             finally
             {
                 if (_lock.IsWriteLockHeld)
-                {
                     _lock.ExitWriteLock();
-                }
             }
-
-            _endingEvent = true;
             Task.Run(() => EndEvent());
         }
 
