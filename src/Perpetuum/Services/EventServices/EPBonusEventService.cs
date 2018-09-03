@@ -1,5 +1,6 @@
 ﻿using Perpetuum.Threading.Process;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Perpetuum.Services.EventServices
@@ -11,48 +12,99 @@ namespace Perpetuum.Services.EventServices
         private bool _eventStarted;
         private bool _endingEvent;
         private int _bonus;
-        private object _lock = new object();
+        private ReaderWriterLockSlim _lock;
 
         public EPBonusEventService()
         {
-            _bonus = 0;
-            _duration = TimeSpan.MaxValue;
-            _elapsed = TimeSpan.Zero;
-            _eventStarted = false;
-            _endingEvent = false;
+            Init();
+        }
+
+        private void Init()
+        {
+            if (_lock == null)
+            {
+                _lock = new ReaderWriterLockSlim();
+            }
+
+            try
+            {
+                _lock.EnterWriteLock();
+                _bonus = 0;
+                _duration = TimeSpan.MaxValue;
+                _elapsed = TimeSpan.Zero;
+                _eventStarted = false;
+                _endingEvent = false;
+            }
+            finally
+            {
+                if (_lock.IsWriteLockHeld)
+                {
+                    _lock.ExitWriteLock();
+                }
+            }
+        }
+
+        private void Cleanup()
+        {
+            if (_lock != null)
+            {
+                _lock.Dispose();
+            }
         }
 
         public int GetBonus()
         {
-            lock (_lock)
+            try
             {
+                _lock.EnterReadLock();
                 return _bonus;
+            }
+            finally
+            {
+                if (_lock.IsReadLockHeld)
+                {
+                    _lock.ExitReadLock();
+                }
             }
         }
 
         public void SetEvent(int bonus, TimeSpan duration)
         {
-            lock (_lock)
+            try
             {
+                _lock.EnterWriteLock();
                 _bonus = bonus;
                 _elapsed = TimeSpan.Zero;
                 _duration = duration;
+                _endingEvent = false;
+                _eventStarted = true;
             }
-
-            _endingEvent = false;
-            _eventStarted = true;
+            finally
+            {
+                if (_lock.IsWriteLockHeld)
+                {
+                    _lock.ExitWriteLock();
+                }
+            }
         }
 
         private void EndEvent()
         {
-            _eventStarted = false;
-            _endingEvent = false;
-
-            lock (_lock)
+            try
             {
+                _lock.EnterWriteLock();
                 _bonus = 0;
                 _elapsed = TimeSpan.Zero;
                 _duration = TimeSpan.MaxValue;
+                _eventStarted = false;
+                _endingEvent = false;
+            }
+            finally
+            {
+                if (_lock.IsWriteLockHeld)
+                {
+                    _lock.ExitWriteLock();
+                }
             }
         }
 
@@ -64,15 +116,35 @@ namespace Perpetuum.Services.EventServices
             if (_endingEvent)
                 return;
 
-            lock (_lock)
+            try
             {
+                _lock.EnterWriteLock();
                 _elapsed += time;
                 if (_elapsed < _duration)
                     return;
             }
+            finally
+            {
+                if (_lock.IsWriteLockHeld)
+                {
+                    _lock.ExitWriteLock();
+                }
+            }
 
             _endingEvent = true;
             Task.Run(() => EndEvent());
+        }
+
+        public override void Stop()
+        {
+            base.Stop();
+            Cleanup();
+        }
+
+        public override void Start()
+        {
+            Init();
+            base.Start();
         }
     }
 }
