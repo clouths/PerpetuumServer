@@ -375,7 +375,7 @@ namespace Perpetuum.Accounting
 
             Transaction.Current.OnCommited(() =>
             {
-                LogEpForActivity(account, character, activityType, rawPoints, boostedPoints, boostFactor);
+                LogEpForActivity(account, character, activityType, rawPoints, boostedPoints, boostFactor, (int)bonusMultiplier);
             });
 
             AddExtensionPoints(account, boostedPoints);
@@ -442,7 +442,7 @@ namespace Perpetuum.Accounting
             return Math.Max(result, extensionPointsToAdd);
         }
 
-        private void LogEpForActivity(Account account,Character character,EpForActivityType activityType,int rawPoints,int points,double boostFactor)
+        private void LogEpForActivity(Account account,Character character,EpForActivityType activityType,int rawPoints,int points,double boostFactor, int bonusMultiplier)
         {
             var epForActivityLogEvent = new EpForActivityLogEvent(activityType)
             {
@@ -451,10 +451,12 @@ namespace Perpetuum.Accounting
                 RawPoints = rawPoints,
                 Points = points,
                 BoostFactor = boostFactor,
+                BoostMultiplier = bonusMultiplier,
+
             };
 
             _epForActivityLogger.Log(epForActivityLogEvent);
-            Logger.Info($"EP4Activity:{activityType} accountId:{account.Id} characterId:{character.Id} raw:{rawPoints} pts:{points} boostFactor:{Math.Round(boostFactor,4)}");
+            Logger.Info($"EP4Activity:{activityType} accountId:{account.Id} characterId:{character.Id} raw:{rawPoints} pts:{points} boostFactor:{Math.Round(boostFactor,4)}  boostFactor:{bonusMultiplier}");
         }
 
         public IEnumerable<EpForActivityLogEvent> GetEpForActivityHistory(Account account,DateTime earlier,DateTime later)
@@ -472,6 +474,7 @@ namespace Perpetuum.Accounting
                         RawPoints = r.GetValue<int>("rawpoints"),
                         Points = r.GetValue<int>("points"),
                         BoostFactor = r.GetValue<double>("boostfactor"),
+                        BoostMultiplier = r.GetValue<int>(k.multiplier),
                         Created = r.GetValue<DateTime>("eventtime")
                     };
                 }).ToArray();
