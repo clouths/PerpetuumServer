@@ -555,6 +555,7 @@
     <Compile Include="Units\UnitUpdatePacketBuilder.cs" />
     <Compile Include="Units\UnitUpdateTypes.cs" />
     <Compile Include="Units\UpdatePacketControl.cs" />
+    <Compile Include="Utilities\ThreadLock.cs" />
     <Compile Include="ValueTypeExtensions.cs" />
     <Compile Include="Vector2Extensions.cs" />
     <Compile Include="Wallets\IWallet.cs" />
