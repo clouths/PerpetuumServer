@@ -1,5 +1,5 @@
 ﻿using Perpetuum.Threading.Process;
-using Perpetuum.Utilities;
+using Perpetuum.Threading;
 using System;
 using System.Threading;
 using System.Threading.Tasks;

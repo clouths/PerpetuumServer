@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace Perpetuum.Utilities
+namespace Perpetuum.Threading
 {
 	public static class ThreadLockExtensions
 	{
