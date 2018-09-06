@@ -7,7 +7,7 @@ namespace Perpetuum.Threading
 	{
 		private sealed class ReadLock : IDisposable
 		{
-			private readonly ReaderWriterLockSlim syncLock;
+			private ReaderWriterLockSlim syncLock;
 			private bool disposed = false;
 
 			public ReadLock(ReaderWriterLockSlim syncLock, TimeSpan timeout)
@@ -26,7 +26,7 @@ namespace Perpetuum.Threading
 				if (!disposed)
 				{
 					syncLock?.ExitReadLock();
-					syncLock?.Dispose();
+					syncLock = null;
 
 					disposed = true;
 				}
@@ -35,7 +35,7 @@ namespace Perpetuum.Threading
 
 		private sealed class WriteLock : IDisposable
 		{
-			private readonly ReaderWriterLockSlim syncLock;
+			private ReaderWriterLockSlim syncLock;
 			private bool disposed = false;
 
 			public WriteLock(ReaderWriterLockSlim syncLock, TimeSpan timeout)
@@ -53,7 +53,7 @@ namespace Perpetuum.Threading
 				if (!disposed)
 				{
 					syncLock?.ExitReadLock();
-					syncLock?.Dispose();
+					syncLock = null;
 
 					disposed = true;
 				}
