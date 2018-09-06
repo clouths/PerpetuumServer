@@ -109,6 +109,7 @@ namespace Perpetuum.Services.EventServices
 				if (disposing)
 				{
 					_lock?.Dispose();
+					_lock = null; // This shouldn't be necessary but added for good practice
 				}
 
 				_disposedValue = true;
