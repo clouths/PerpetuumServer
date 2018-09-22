@@ -4,6 +4,7 @@ namespace Perpetuum.Services.Looting
     {
         LootOnly,
         Field,
-        Mission
+        Mission,
+        Relic
     }
 }

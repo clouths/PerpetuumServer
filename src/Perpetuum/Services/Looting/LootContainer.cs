@@ -453,7 +453,8 @@ namespace Perpetuum.Services.Looting
             {
                 {LootContainerType.LootOnly,DefinitionNames.LOOT_CONTAINER_OBJECT},
                 {LootContainerType.Field,DefinitionNames.FIELD_CONTAINER},
-                {LootContainerType.Mission,DefinitionNames.MISSION_CONTAINER}
+                {LootContainerType.Mission,DefinitionNames.MISSION_CONTAINER},
+                {LootContainerType.Relic,DefinitionNames.RELIC_CONTAINER}
             };
 
             private readonly List<LootItem> _lootItems = new List<LootItem>();

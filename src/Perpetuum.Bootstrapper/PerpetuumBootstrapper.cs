@@ -98,6 +98,7 @@ using Perpetuum.Services.ProductionEngine.CalibrationPrograms;
 using Perpetuum.Services.ProductionEngine.Facilities;
 using Perpetuum.Services.ProductionEngine.ResearchKits;
 using Perpetuum.Services.Relay;
+using Perpetuum.Services.Relics;
 using Perpetuum.Services.RiftSystem;
 using Perpetuum.Services.Sessions;
 using Perpetuum.Services.Social;
@@ -879,6 +880,7 @@ namespace Perpetuum.Bootstrapper
             RegisterUnit<LootContainer>().OnActivated(e => e.Instance.SetDespawnTime(TimeSpan.FromMinutes(15)));
             RegisterUnit<FieldContainer>().OnActivated(e => e.Instance.SetDespawnTime(TimeSpan.FromHours(1)));
             RegisterUnit<MissionContainer>().OnActivated(e => e.Instance.SetDespawnTime(TimeSpan.FromMinutes(15)));
+            RegisterUnit<RelicContainer>().OnActivated(e => e.Instance.SetDespawnTime(TimeSpan.FromMinutes(2))); //TODO new relic can def
             RegisterUnit<ActiveHackingSAP>();
             RegisterUnit<PassiveHackingSAP>();
             RegisterUnit<DestructionSAP>();
@@ -1042,6 +1044,7 @@ namespace Perpetuum.Bootstrapper
                 ByName<LootContainer>(DefinitionNames.LOOT_CONTAINER_OBJECT);
                 ByName<FieldContainer>(DefinitionNames.FIELD_CONTAINER);
                 ByName<MissionContainer>(DefinitionNames.MISSION_CONTAINER);
+                ByName<RelicContainer>(DefinitionNames.RELIC_CONTAINER);
                 ByName<Ice>(DefinitionNames.ICE);
 
                 ByCategoryFlags<FieldContainerCapsule>(CategoryFlags.cf_container_capsule);
@@ -2391,6 +2394,8 @@ namespace Perpetuum.Bootstrapper
             _builder.RegisterType<SettingsLoader>();
             _builder.RegisterType<PlantRuleLoader>();
 
+            _builder.RegisterType<RelicManager>(); //TODO new relic manager
+
 
             _builder.Register<Func<ZoneConfiguration, IZone>>(x =>
             {
@@ -2416,6 +2421,7 @@ namespace Perpetuum.Bootstrapper
                     zone.Environment = ctx.Resolve<ZoneEnvironmentHandler>(new TypedParameter(typeof(IZone), zone));
                     zone.SafeSpawnPoints = ctx.Resolve<ISafeSpawnPointsRepository>(new TypedParameter(typeof(IZone), zone));
                     zone.ZoneSessionFactory = ctx.Resolve<ZoneSession.Factory>();
+                    zone.RelicManager = ctx.Resolve<RelicManager>(new TypedParameter(typeof(IZone), zone));//TODO new relic manager
 
                     if (configuration.Terraformable)
                     {

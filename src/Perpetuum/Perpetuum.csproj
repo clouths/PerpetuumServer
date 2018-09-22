@@ -279,6 +279,7 @@
     <Compile Include="Selectors\ModuloBasedSelector.cs" />
     <Compile Include="Services\Channels\GameAdminCommands.cs" />
     <Compile Include="Services\EventServices\EPBonusEventService.cs" />
+    <Compile Include="Services\Looting\RelicContainer.cs" />
     <Compile Include="Services\MissionEngine\DisplayMissionSpotsProcess.cs" />
     <Compile Include="Services\MissionEngine\MissionResolveTester.cs" />
     <Compile Include="Services\MissionEngine\OneLocationTest.cs" />
@@ -286,6 +287,7 @@
     <Compile Include="IMessageSender.cs" />
     <Compile Include="MessageSender.cs" />
     <Compile Include="Services\Relay\ServerStateInfo.cs" />
+    <Compile Include="Services\Relics\RelicManager.cs" />
     <Compile Include="Services\Sessions\SessionID.cs" />
     <Compile Include="Common\SettingsLoader.cs" />
     <Compile Include="EntityFramework\DefinitionConfig.cs" />
