@@ -77,5 +77,13 @@ namespace Perpetuum.Units
             return helper;
         }
 
+        public void ClearEffect(Unit unit)
+        {
+            unit.EffectHandler.Update(TimeSpan.FromMilliseconds(100));
+            unit.EffectHandler.RemoveEffectByToken(_effectToken);
+            unit.EffectHandler.RemoveEffectsByType(EffectType.effect_despawn_timer);
+            unit.EffectHandler.RemoveEffectsByCategory(EffectCategory.effcat_terrain_object_effects);//Despawn timer!
+        }
+
     }
 }

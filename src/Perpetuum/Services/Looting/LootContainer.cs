@@ -59,12 +59,10 @@ namespace Perpetuum.Services.Looting
             _despawnHelper.CanApplyDespawnEffect = OnCanApplyDespawnEffect;
         }
 
-        public void ResetDespawnTimeAndStrategy(TimeSpan time, UnitDespawnStrategy strategy)
+        public void ResetDespawnTime(TimeSpan time)
         {
-            EffectHandler.RemoveEffectsByType(EffectType.effect_despawn_timer);
-            _despawnHelper = UnitDespawnHelper.Create(this, time);
-            _despawnHelper.DespawnStrategy = strategy;
-            _despawnHelper.CanApplyDespawnEffect = OnCanApplyDespawnEffect;
+            _despawnHelper.ClearEffect(this);
+            SetDespawnTime(time);
         }
 
         public override void AcceptVisitor(IEntityVisitor visitor)
@@ -257,7 +255,6 @@ namespace Perpetuum.Services.Looting
                         if (CanRemoveIfEmpty() && _itemRepository.IsEmpty(this))
                         {
                             RemoveFromZone();
-                            //NotifyObservers();
                         }
                         else
                         {
@@ -482,8 +479,7 @@ namespace Perpetuum.Services.Looting
             {
                 {LootContainerType.LootOnly,DefinitionNames.LOOT_CONTAINER_OBJECT},
                 {LootContainerType.Field,DefinitionNames.FIELD_CONTAINER},
-                {LootContainerType.Mission,DefinitionNames.MISSION_CONTAINER},
-                {LootContainerType.Relic,DefinitionNames.LOOT_CONTAINER_OBJECT}
+                {LootContainerType.Mission,DefinitionNames.MISSION_CONTAINER}
             };
 
             protected readonly List<LootItem> _lootItems = new List<LootItem>();
