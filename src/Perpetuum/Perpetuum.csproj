@@ -279,7 +279,6 @@
     <Compile Include="Selectors\ModuloBasedSelector.cs" />
     <Compile Include="Services\Channels\GameAdminCommands.cs" />
     <Compile Include="Services\EventServices\EPBonusEventService.cs" />
-    <Compile Include="Services\Looting\RelicContainer.cs" />
     <Compile Include="Services\MissionEngine\DisplayMissionSpotsProcess.cs" />
     <Compile Include="Services\MissionEngine\MissionResolveTester.cs" />
     <Compile Include="Services\MissionEngine\OneLocationTest.cs" />

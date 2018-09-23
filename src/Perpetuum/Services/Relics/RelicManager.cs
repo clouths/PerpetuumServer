@@ -12,6 +12,7 @@ using Perpetuum.Items;
 using Perpetuum.EntityFramework;
 using Perpetuum.ExportedTypes;
 using System.Threading;
+using Perpetuum.Threading;
 using Perpetuum.Log;
 using Perpetuum.Timers;
 using Perpetuum.Players;
@@ -30,12 +31,15 @@ namespace Perpetuum.Services.Relics
         private RiftSpawnPositionFinder _spawnPosFinder;
         private ILootGenerator _lootGenerator;
         private readonly List<LootContainer> _spawnedCans = new List<LootContainer>();
-        private readonly TimeSpan _relicLifeSpan = TimeSpan.FromMinutes(3);
+        private readonly TimeSpan _relicLifeSpan = TimeSpan.FromMinutes(2);
         private readonly TimeSpan _relicRefreshRate = TimeSpan.FromSeconds(10);
+        private ReaderWriterLockSlim _lock;
+        private readonly TimeSpan THREAD_TIMEOUT = TimeSpan.FromSeconds(4);
 
 
         public RelicManager(IZone zone)
         {
+            _lock = new ReaderWriterLockSlim();
             _zone = zone;
             _spawnPosFinder = new PveRiftSpawnPositionFinder(zone);
             if (zone.Configuration.Terraformable)
@@ -81,7 +85,6 @@ namespace Perpetuum.Services.Relics
 
         private void CheckRelics()
         {
-            var count = 0;
             foreach (LootContainer cont in _spawnedCans)
             {
                 var unit = _zone.GetUnit(cont.Eid);
@@ -89,10 +92,8 @@ namespace Perpetuum.Services.Relics
                 {
                     var can = unit as LootContainer;
                     RefreshBeam(can);
-                    count++;
                 }
             }
-            Interlocked.Exchange(ref _relicCount, count);
         }
 
 
@@ -110,28 +111,35 @@ namespace Perpetuum.Services.Relics
 
         public void Update(TimeSpan time)
         {
-            _elapsed += time;
-            if (_elapsed < _relicRefreshRate)
-                return;
-            _elapsed = TimeSpan.Zero;
-
-            while (_relicCount < MAX_RELICS && !(_zone is StrongHoldZone))
+            using (_lock.Write(THREAD_TIMEOUT))
             {
-                SpawnRelic();
+                _elapsed += time;
+                if (_elapsed < _relicRefreshRate)
+                    return;
+                _elapsed = TimeSpan.Zero;
+                while (_spawnedCans.Count < MAX_RELICS && !(_zone is StrongHoldZone))
+                {
+                    SpawnRelic();
+                }
             }
 
-
-            CheckRelics();
-
+            using (_lock.Read(THREAD_TIMEOUT))
+            {
+                CheckRelics();
+            }
         }
-        //TODO implement onshutdown cleanup procedure to remove all current relics!
+
 
         public void Stop()
         {
-            while (_spawnedCans.Count > 0)
+            using (_lock.Write(THREAD_TIMEOUT))
             {
-                _spawnedCans.Last().RemoveFromZone();
+                while (_spawnedCans.Count > 0)
+                {
+                    _spawnedCans.Last().RemoveFromZone();
+                }
             }
+            
         }
 
 
