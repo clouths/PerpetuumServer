@@ -880,7 +880,6 @@ namespace Perpetuum.Bootstrapper
             RegisterUnit<LootContainer>().OnActivated(e => e.Instance.SetDespawnTime(TimeSpan.FromMinutes(15)));
             RegisterUnit<FieldContainer>().OnActivated(e => e.Instance.SetDespawnTime(TimeSpan.FromHours(1)));
             RegisterUnit<MissionContainer>().OnActivated(e => e.Instance.SetDespawnTime(TimeSpan.FromMinutes(15)));
-            RegisterUnit<RelicContainer>().OnActivated(e => e.Instance.SetDespawnTime(TimeSpan.FromMinutes(2))); //TODO new relic can def
             RegisterUnit<ActiveHackingSAP>();
             RegisterUnit<PassiveHackingSAP>();
             RegisterUnit<DestructionSAP>();
@@ -1044,7 +1043,6 @@ namespace Perpetuum.Bootstrapper
                 ByName<LootContainer>(DefinitionNames.LOOT_CONTAINER_OBJECT);
                 ByName<FieldContainer>(DefinitionNames.FIELD_CONTAINER);
                 ByName<MissionContainer>(DefinitionNames.MISSION_CONTAINER);
-                ByName<RelicContainer>(DefinitionNames.RELIC_CONTAINER);
                 ByName<Ice>(DefinitionNames.ICE);
 
                 ByCategoryFlags<FieldContainerCapsule>(CategoryFlags.cf_container_capsule);

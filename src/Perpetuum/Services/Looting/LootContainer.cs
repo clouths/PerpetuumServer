@@ -18,6 +18,7 @@ using Perpetuum.Players;
 using Perpetuum.Players.ExtensionMethods;
 using Perpetuum.Robots;
 using Perpetuum.Services.MissionEngine.MissionTargets;
+using Perpetuum.Services.Relics;
 using Perpetuum.Timers;
 using Perpetuum.Units;
 using Perpetuum.Zones;
@@ -58,6 +59,14 @@ namespace Perpetuum.Services.Looting
             _despawnHelper.CanApplyDespawnEffect = OnCanApplyDespawnEffect;
         }
 
+        public void ResetDespawnTimeAndStrategy(TimeSpan time, UnitDespawnStrategy strategy)
+        {
+            EffectHandler.RemoveEffectsByType(EffectType.effect_despawn_timer);
+            _despawnHelper = UnitDespawnHelper.Create(this, time);
+            _despawnHelper.DespawnStrategy = strategy;
+            _despawnHelper.CanApplyDespawnEffect = OnCanApplyDespawnEffect;
+        }
+
         public override void AcceptVisitor(IEntityVisitor visitor)
         {
             if (!TryAcceptVisitor(this, visitor))
@@ -75,7 +84,7 @@ namespace Perpetuum.Services.Looting
             get { return ErrorCodes.TargetIsNonAttackable; }
         }
 
-        private bool OnCanApplyDespawnEffect(Unit unit)
+        protected bool OnCanApplyDespawnEffect(Unit unit)
         {
             return _looters.Count > 0;
         }
@@ -248,6 +257,7 @@ namespace Perpetuum.Services.Looting
                         if (CanRemoveIfEmpty() && _itemRepository.IsEmpty(this))
                         {
                             RemoveFromZone();
+                            //NotifyObservers();
                         }
                         else
                         {
@@ -260,6 +270,21 @@ namespace Perpetuum.Services.Looting
                     scope.Complete();
                 }
             }
+        }
+        private RelicManager _relicManager;
+        public void SubscribeObserver(RelicManager relicManager)
+        {
+            _relicManager = relicManager;
+        }
+
+        private void NotifyObservers()
+        {
+            _relicManager?.DespawnRelic(this);
+        }
+
+        public void RemoveObserver()
+        {
+            _relicManager = null;
         }
 
         private void OnTakeLoots(Player player, IEnumerable<Item> lootedItems)
@@ -321,11 +346,15 @@ namespace Perpetuum.Services.Looting
 
         protected override void OnRemovedFromZone(IZone zone)
         {
+            
             Db.CreateTransactionAsync(scope =>
             {
                 _itemRepository.DeleteAll(this);
                 zone.UnitService.RemoveUserUnit(this);
-            }).ContinueWith(t => { base.OnRemovedFromZone(zone); });
+            }).ContinueWith(t => {
+                NotifyObservers();
+                base.OnRemovedFromZone(zone);
+            });
         }
 
         protected class LootContainerProgressInfoPacketBuilder : IBuilder<Packet>
@@ -449,20 +478,20 @@ namespace Perpetuum.Services.Looting
 
         public class LootContainerBuilder
         {
-            private static readonly Dictionary<LootContainerType, string> _containerTypeToName = new Dictionary<LootContainerType, string>
+            protected static readonly Dictionary<LootContainerType, string> _containerTypeToName = new Dictionary<LootContainerType, string>
             {
                 {LootContainerType.LootOnly,DefinitionNames.LOOT_CONTAINER_OBJECT},
                 {LootContainerType.Field,DefinitionNames.FIELD_CONTAINER},
                 {LootContainerType.Mission,DefinitionNames.MISSION_CONTAINER},
-                {LootContainerType.Relic,DefinitionNames.RELIC_CONTAINER}
+                {LootContainerType.Relic,DefinitionNames.LOOT_CONTAINER_OBJECT}
             };
 
-            private readonly List<LootItem> _lootItems = new List<LootItem>();
+            protected readonly List<LootItem> _lootItems = new List<LootItem>();
 
-            private LootContainerType _containerType;
-            private Player _ownerPlayer;
-            private int _pinCode;
-            private BeamType _enterBeamType;
+            protected LootContainerType _containerType;
+            protected Player _ownerPlayer;
+            protected int _pinCode;
+            protected BeamType _enterBeamType;
 
             internal LootContainerBuilder()
             {

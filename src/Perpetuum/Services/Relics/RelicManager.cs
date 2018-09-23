@@ -17,6 +17,8 @@ using Perpetuum.Timers;
 using Perpetuum.Players;
 using Perpetuum.Data;
 using System.Transactions;
+using Perpetuum.Zones.Beams;
+using Perpetuum.Units;
 
 namespace Perpetuum.Services.Relics
 {
@@ -27,8 +29,9 @@ namespace Perpetuum.Services.Relics
         private IZone _zone;
         private RiftSpawnPositionFinder _spawnPosFinder;
         private ILootGenerator _lootGenerator;
-        private readonly LinkedList<TimeTracker> _nextRelicSpawns = new LinkedList<TimeTracker>();
-        private readonly TimeSpan _relicLifeSpan = TimeSpan.FromMinutes(2);
+        private readonly List<LootContainer> _spawnedCans = new List<LootContainer>();
+        private readonly TimeSpan _relicLifeSpan = TimeSpan.FromMinutes(3);
+        private readonly TimeSpan _relicRefreshRate = TimeSpan.FromSeconds(10);
 
 
         public RelicManager(IZone zone)
@@ -50,17 +53,24 @@ namespace Perpetuum.Services.Relics
         //Should we respawn cans after one is removed/looted? -- need to attach event RemovedFromZone
         private void SpawnRelic()
         {
-            Point pt = _spawnPosFinder.FindSpawnPosition();
             using (var scope = Db.CreateTransaction())
             {
-                LootContainer.Create().AddLoot(_lootGenerator).SetEnterBeamType(BeamType.artifact_found).SetType(LootContainerType.Relic).BuildAndAddToZone(_zone, pt.ToPosition());
-
+                Point pt = _spawnPosFinder.FindSpawnPosition();
+                Position position = pt.ToPosition();
+                LootContainer container = LootContainer.Create().AddLoot(_lootGenerator).Build(_zone, position);
                 Logger.Info("Relic created at: " + _zone.Configuration.Name + " " + pt.ToString());
-
 
                 Transaction.Current.OnCommited(() =>
                 {
-                    _nextRelicSpawns.AddLast(new TimeTracker(_relicLifeSpan));
+                    var beamBuilder = Beam.NewBuilder().WithType(BeamType.artifact_found).WithSourcePosition(container.CurrentPosition.AddToZ(10))
+                        .WithTarget(container)
+                        .WithState(BeamState.Hit)
+                        .WithDuration(_relicRefreshRate);
+
+                    container.AddToZone(_zone, position, ZoneEnterType.Default, beamBuilder);
+                    container.ResetDespawnTimeAndStrategy(_relicLifeSpan, DespawnRelicByEffect);
+                    container.SubscribeObserver(this);
+                    _spawnedCans.Add(container);
                     Interlocked.Increment(ref _relicCount);
                 });
                 scope.Complete();
@@ -68,22 +78,78 @@ namespace Perpetuum.Services.Relics
         }
 
 
+
+        private void CheckRelics()
+        {
+            var count = 0;
+            foreach (LootContainer cont in _spawnedCans)
+            {
+                var unit = _zone.GetUnit(cont.Eid);
+                if (unit is LootContainer)
+                {
+                    var can = unit as LootContainer;
+                    RefreshBeam(can);
+                    count++;
+                }
+            }
+            Interlocked.Exchange(ref _relicCount, count);
+        }
+
+
+        private void RefreshBeam(LootContainer can)
+        {
+            var beamBuilder = Beam.NewBuilder().WithType(BeamType.artifact_found)
+                .WithTarget(can)
+                .WithState(BeamState.Hit)
+                .WithDuration(_relicRefreshRate);
+            _zone.CreateBeam(beamBuilder);
+        }
+
+
+        private TimeSpan _elapsed;
+
         public void Update(TimeSpan time)
         {
+            _elapsed += time;
+            if (_elapsed < _relicRefreshRate)
+                return;
+            _elapsed = TimeSpan.Zero;
+
             while (_relicCount < MAX_RELICS && !(_zone is StrongHoldZone))
             {
                 SpawnRelic();
             }
 
-            _nextRelicSpawns.RemoveAll(t =>
-            {
-                t.Update(time);
-                if (!t.Expired)
-                    return false;
 
-                SpawnRelic();
-                return true;
-            });
+            CheckRelics();
+
+        }
+        //TODO implement onshutdown cleanup procedure to remove all current relics!
+
+        public void Stop()
+        {
+            while (_spawnedCans.Count > 0)
+            {
+                _spawnedCans.Last().RemoveFromZone();
+            }
+        }
+
+
+        public void DespawnRelic(LootContainer can)
+        {
+            Logger.Info("Relic removed at: " + _zone.Configuration.Name + " " + can.CurrentPosition.ToString());
+            _spawnedCans.Remove(can);
+            Interlocked.Decrement(ref _relicCount);
+        }
+
+        private void DespawnRelicByEffect(Unit unit)
+        {
+            if (unit is LootContainer)
+            {
+                var can = unit as LootContainer;
+                Logger.Info("Removing Relic at: " + _zone.Configuration.Name + " " + can.CurrentPosition.ToString());
+                can.RemoveFromZone();
+            }
         }
     }
 }
