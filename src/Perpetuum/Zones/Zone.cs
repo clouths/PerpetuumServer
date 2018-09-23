@@ -106,6 +106,9 @@ namespace Perpetuum.Zones
         {
             Listener.Stop();
 
+            //Emit stop signal to child services
+            RelicManager?.Stop();
+
             // players
             SaveUnitsToDb<Player>();
             SaveUnitsToDb<PBSDockingBase>();
