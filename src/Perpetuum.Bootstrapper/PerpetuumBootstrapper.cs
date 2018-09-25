@@ -1212,7 +1212,7 @@ namespace Perpetuum.Bootstrapper
                 ByNamePatternAndFlag<Paint>("def_paint", CategoryFlags.cf_lottery_items);
 
                 //TODO new CalibrationTemplateItem -- activates like paint! same category!
-                ByNamePatternAndFlag<CalibrationProgramCapsule>("_dynamic_cprg_capsule", CategoryFlags.cf_lottery_items);
+                ByNamePatternAndFlag<CalibrationProgramCapsule>("_CT_capsule", CategoryFlags.cf_lottery_items);
 
                 ByCategoryFlags<VisibilityBasedProbeDeployer>(CategoryFlags.cf_proximity_probe_deployer);
                 ByCategoryFlags<Item>(CategoryFlags.cf_gift_packages);
