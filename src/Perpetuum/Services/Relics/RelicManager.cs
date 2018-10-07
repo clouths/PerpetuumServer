@@ -65,7 +65,7 @@ namespace Perpetuum.Services.Relics
 
                 Transaction.Current.OnCommited(() =>
                 {
-                    var beamBuilder = Beam.NewBuilder().WithType(BeamType.artifact_found).WithSourcePosition(container.CurrentPosition.AddToZ(10))
+                    var beamBuilder = Beam.NewBuilder().WithType(BeamType.artifact_found).WithSourcePosition(container.CurrentPosition)
                         .WithTarget(container)
                         .WithState(BeamState.Hit)
                         .WithDuration(_relicRefreshRate);
@@ -95,7 +95,7 @@ namespace Perpetuum.Services.Relics
 
         private void RefreshBeam(Unit can)
         {
-            var beamBuilder = Beam.NewBuilder().WithType(BeamType.green_10sec).WithTargetPosition(can.PositionWithHeight.AddToZ(1))
+            var beamBuilder = Beam.NewBuilder().WithType(BeamType.green_10sec).WithTargetPosition(can.PositionWithHeight.AddToZ(0.2))
                 .WithState(BeamState.Hit)
                 .WithDuration(_relicRefreshRate);
             _zone.CreateBeam(beamBuilder);
