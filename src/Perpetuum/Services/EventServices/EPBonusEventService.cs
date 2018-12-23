@@ -8,7 +8,7 @@ namespace Perpetuum.Services.EventServices
 {
     public class EPBonusEventService : Process, IDisposable
 	{
-		private readonly TimeSpan THREAD_TIMEOUT = TimeSpan.FromSeconds(1);
+		private readonly TimeSpan THREAD_TIMEOUT = TimeSpan.FromSeconds(10);
 		private bool _disposedValue = false;
 
 		private TimeSpan _duration;
