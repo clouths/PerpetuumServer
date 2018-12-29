@@ -50,8 +50,7 @@ namespace Perpetuum.RequestHandlers
 
 				var containerItem = (EPBoost)container.GetItemOrThrow(itemEid, true).Unstack(1);
 
-				bool activated = containerItem.Activate(accountManager, account);
-				activated.ThrowIfFalse(ErrorCodes.ItemNotUsable);
+				containerItem.Activate(accountManager, account);
 
 				_entityServices.Repository.Delete(containerItem);
 				container.Save();

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Transactions;
 using Perpetuum.Accounting.Characters;
@@ -327,12 +328,19 @@ namespace Perpetuum.Accounting
         /// </summary>
         public void ExtensionSubscriptionStart(Account account,DateTime startTime,DateTime endTime, int multiplierBonus)
         {
-            Db.Query().CommandText("extensionSubscriptionStart")
-                .SetParameter("@accountID",account.Id)
-                .SetParameter("@startTime",startTime)
-                .SetParameter("@endTime",endTime)
-				.SetParameter("@multiplierBonus", multiplierBonus)
-                .ExecuteNonQuery();
+            try
+            {
+                Db.Query().CommandText("extensionSubscriptionStart")
+                    .SetParameter("@accountID", account.Id)
+                    .SetParameter("@startTime", startTime)
+                    .SetParameter("@endTime", endTime)
+                    .SetParameter("@multiplierBonus", multiplierBonus)
+                    .ExecuteNonQuery();
+            }
+            catch (SqlException exc)
+            {
+                exc.Number.ThrowIfEqual(100000, ErrorCodes.ItemNotUsable);
+            }
         }
 
         //public void ExtensionSubscriptionExtend(Account account,DateTime extendedValidUntil)
