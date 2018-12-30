@@ -68,9 +68,20 @@ namespace Perpetuum.Modules
             {
                 targetPosition = (myLock as TerrainLock).Location.AddToZ(BLOB_EMITTER_HEIGHT);
             }
-            if (myLock is UnitLock)
+            else if (myLock is UnitLock)
             {
                 targetPosition = (myLock as UnitLock).Target.CurrentPosition.AddToZ(BLOB_EMITTER_HEIGHT);
+            }
+            else
+            {
+                OnError(ErrorCodes.InvalidLockType);
+                return;
+            }
+
+            if(targetPosition.Equals(new Position()))
+            {
+                OnError(ErrorCodes.InvalidLock);
+                return;
             }
             
             zone.Units.OfType<BlobEmitterUnit>().WithinRange(targetPosition, BLOB_EMITTER_DEPLOY_RANGE).Any().ThrowIfTrue(ErrorCodes.BlobEmitterInRange);
