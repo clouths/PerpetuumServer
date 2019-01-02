@@ -25,19 +25,33 @@ namespace Perpetuum.Services.Relics
 {
     public class RelicManager
     {
-        private static readonly int MAX_RELICS = 50;
+
         private IZone _zone;
         private RiftSpawnPositionFinder _spawnPosFinder;
-        private ILootGenerator _lootGenerator;
-        private readonly List<LootContainer> _spawnedCans = new List<LootContainer>();
+
+
         private readonly TimeSpan _relicLifeSpan = TimeSpan.FromMinutes(2);
-        private readonly TimeSpan _relicRefreshRate = TimeSpan.FromSeconds(10);
+        private readonly TimeSpan _relicRefreshRate = TimeSpan.FromSeconds(19);
         private ReaderWriterLockSlim _lock;
         private readonly TimeSpan THREAD_TIMEOUT = TimeSpan.FromSeconds(4);
 
 
+        private List<Relic> _relicsOnZone = new List<Relic>();
+
+        private RelicZoneConfigRepository relicZoneConfigRepository;
+        private RelicSpawnInfoRepository relicSpawnInfoRepository;
+        private RelicLootGenerator relicLootGenerator;
+        private RelicRepository relicRepository;
+
+        private int _max_relics = 0;
+        private IEnumerable<RelicSpawnInfo> _spawnInfos;
+
+        private Random _random;
+
+
         public RelicManager(IZone zone)
         {
+            _random = new Random();
             _lock = new ReaderWriterLockSlim();
             _zone = zone;
             _spawnPosFinder = new PveRiftSpawnPositionFinder(zone);
@@ -45,58 +59,119 @@ namespace Perpetuum.Services.Relics
             {
                 _spawnPosFinder = new PvpRiftSpawnPositionFinder(zone);
             }
-            //TODO arbitrary item generated for testing -- TODO make table of loots, need repository object, query random in spawnRelic method!
-            ItemInfo itemInfo = new ItemInfo(EntityDefault.GetByName(DefinitionNames.COMMON_REACTOR_PLASMA).Definition, 200, 500);
-            LootGeneratorItemInfo info = new LootGeneratorItemInfo(itemInfo, false, 1.0);
-            _lootGenerator = new LootGenerator(new List<LootGeneratorItemInfo>() { info });
+            //TODO -- init repositories and extract data
+            relicZoneConfigRepository = new RelicZoneConfigRepository(zone);
+            relicSpawnInfoRepository = new RelicSpawnInfoRepository(zone);
+            relicRepository = new RelicRepository(zone);
+            relicLootGenerator = new RelicLootGenerator(relicRepository);
+
+            var config = relicZoneConfigRepository.GetZoneConfig();
+            _max_relics = config.GetMax();
+
+            _spawnInfos = relicSpawnInfoRepository.GetAll();
+  
         }
 
-        //TODO creates can, injects into zone, we lose handle on can so we will not know if looted, expired etc...
-        //To discuss: should we respawn cans at some fixed interval? -- regardless if looted
-        //Should we respawn cans after one is removed/looted? -- need to attach event RemovedFromZone
+        //Relics are just beam locations until a player comes within range of it, then they are awarded the Loot and EP for finding the Relic
+        public void CheckNearbyRelics(Player player)
+        {
+            using (_lock.Write(THREAD_TIMEOUT))
+            {
+                foreach (Relic r in _relicsOnZone)
+                {
+                    if (r.GetPosition().TotalDistance3D(player.CurrentPosition) < r.GetRelicInfo().GetActivationRange())
+                    {
+                        r.PopRelic();
+                        var relicLoots = relicLootGenerator.GenerateLoot(r);
+                        if (relicLoots == null)
+                        {
+                            continue;
+                        }
+                        Task.Run(() =>
+                        {
+                            using (var scope = Db.CreateTransaction())
+                            {
+                                LootContainer.Create().SetOwner(player).SetEnterBeamType(BeamType.artifact_found).AddLoot(relicLoots.LootItems).BuildAndAddToZone(_zone, relicLoots.Position);
+                                var ep = _zone.Configuration.IsBeta ? 10 : 5;
+                                if (_zone.Configuration.Type == ZoneType.Training) ep = 0;
+                                if (ep > 0) player.Character.AddExtensionPointsBoostAndLog(EpForActivityType.Artifact, ep);
+                                scope.Complete();
+                            }
+                        });
+                    }
+                }
+                _relicsOnZone.RemoveAll(r => r.IsFound());
+            }
+        }
+
+
+        private Point FindRelicPosition(RelicInfo info)
+        {
+            if (info.HasStaticPosistion) //If the relic spawn info has a valid static position defined - use that
+            {
+                return info.GetPosition().ToPoint();
+            }
+            return _spawnPosFinder.FindSpawnPosition();
+        }
+
+        private RelicInfo GetNextRelicType()
+        {
+            var spawnRates = _spawnInfos;
+            var sumRate = spawnRates.Sum(r => r.GetRate());
+            var minRate = 0.0;
+            var chance = _random.NextDouble();
+
+            foreach (var spawnRate in spawnRates)
+            {
+                var rate = spawnRate.GetRate() / sumRate;
+                var maxRate = rate + minRate;
+
+                if (minRate < chance && chance <= maxRate)
+                {
+                    return spawnRate.GetRelicInfo();
+                }
+                minRate += rate;
+            }
+            return null;//TODO bad
+        }
+
         private void SpawnRelic()
         {
             using (var scope = Db.CreateTransaction())
             {
-                Point pt = _spawnPosFinder.FindSpawnPosition();
+                RelicInfo info = GetNextRelicType();
+                Point pt = FindRelicPosition(info); //TODO check if this pt is == to existing relics!! (dont spawn multiple statics or randoms in same place) (maybe also within arbitrary radius..)
                 Position position = pt.ToPosition();
-                LootContainer container = LootContainer.Create().AddLoot(_lootGenerator).Build(_zone, position);
-                Logger.Info("Relic created at: " + _zone.Configuration.Name + " " + pt.ToString());
-
-                Transaction.Current.OnCommited(() =>
-                {
-                    var beamBuilder = Beam.NewBuilder().WithType(BeamType.artifact_found).WithSourcePosition(container.CurrentPosition)
-                        .WithTarget(container)
-                        .WithState(BeamState.Hit)
-                        .WithDuration(_relicRefreshRate);
-
-                    container.ResetDespawnTime(_relicLifeSpan);
-                    container.AddToZone(_zone, position, ZoneEnterType.Default, beamBuilder);
-                    container.SubscribeObserver(this);
-                    _spawnedCans.Add(container);
-                });
-                scope.Complete();
+                Relic relic = new Relic(0, info, _zone, _zone.GetPosition(position));
+                _relicsOnZone.Add(relic);
             }
         }
-
 
 
         private void CheckRelics()
         {
-            foreach (LootContainer cont in _spawnedCans)
+            foreach(Relic r in _relicsOnZone)
             {
-                var unit = _zone.GetUnit(cont.Eid);
-                if (unit == null)
-                    continue;
-                RefreshBeam(unit);
+                RefreshBeam(r);
+#if DEBUG
+                Logger.Info("Relic Location: Zone " + this._zone.Id + " " + r.GetPosition() );
+#endif
             }
         }
 
 
-        private void RefreshBeam(Unit can)
+        private void RefreshBeam(Relic relic)
         {
-            var beamBuilder = Beam.NewBuilder().WithType(BeamType.green_10sec).WithTargetPosition(can.PositionWithHeight.AddToZ(0.2))
-                .WithState(BeamState.Hit)
+            var beamBuilder = Beam.NewBuilder().WithType(BeamType.artifact_radar).WithTargetPosition(relic.GetPosition())
+                .WithState(BeamState.AlignToTerrain)
+                .WithDuration(_relicRefreshRate);
+            _zone.CreateBeam(beamBuilder);
+             beamBuilder = Beam.NewBuilder().WithType(BeamType.blue_20sec).WithTargetPosition(relic.GetPosition())
+                .WithState(BeamState.AlignToTerrain)
+                .WithDuration(_relicRefreshRate);
+            _zone.CreateBeam(beamBuilder);
+            beamBuilder = Beam.NewBuilder().WithType(BeamType.nature_effect).WithTargetPosition(relic.GetPosition())
+                .WithState(BeamState.AlignToTerrain)
                 .WithDuration(_relicRefreshRate);
             _zone.CreateBeam(beamBuilder);
         }
@@ -112,7 +187,7 @@ namespace Perpetuum.Services.Relics
                 if (_elapsed < _relicRefreshRate)
                     return;
                 _elapsed = TimeSpan.Zero;
-                while (_spawnedCans.Count < MAX_RELICS && !(_zone is StrongHoldZone))
+                while (_relicsOnZone.Count < _max_relics && !(_zone is StrongHoldZone))
                 {
                     SpawnRelic();
                 }
@@ -124,23 +199,5 @@ namespace Perpetuum.Services.Relics
             }
         }
 
-
-        public void Stop()
-        {
-            using (_lock.Write(THREAD_TIMEOUT))
-            {
-                for (int i = _spawnedCans.Count - 1; i >= 0; i--)
-                {
-                    _spawnedCans[i].RemoveFromZone(); //TODO still have leftover cans after server shutdown!
-                }
-            }
-        }
-
-
-        public void DespawnRelic(LootContainer can)
-        {
-            Logger.Info("Relic removed at: " + _zone.Configuration.Name + " " + can.CurrentPosition.ToString());
-            _spawnedCans.Remove(can);
-        }
     }
 }

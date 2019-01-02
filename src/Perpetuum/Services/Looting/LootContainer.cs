@@ -268,21 +268,6 @@ namespace Perpetuum.Services.Looting
                 }
             }
         }
-        private RelicManager _relicManager;
-        public void SubscribeObserver(RelicManager relicManager)
-        {
-            _relicManager = relicManager;
-        }
-
-        private void NotifyObservers()
-        {
-            _relicManager?.DespawnRelic(this);
-        }
-
-        public void RemoveObserver()
-        {
-            _relicManager = null;
-        }
 
         private void OnTakeLoots(Player player, IEnumerable<Item> lootedItems)
         {
@@ -349,7 +334,6 @@ namespace Perpetuum.Services.Looting
                 _itemRepository.DeleteAll(this);
                 zone.UnitService.RemoveUserUnit(this);
             }).ContinueWith(t => {
-                NotifyObservers();
                 base.OnRemovedFromZone(zone);
             });
         }

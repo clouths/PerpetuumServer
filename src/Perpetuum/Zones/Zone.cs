@@ -70,7 +70,7 @@ namespace Perpetuum.Zones
         public RiftManager RiftManager { private get; set; }
 
         [CanBeNull]
-        public RelicManager RelicManager { private get; set; }
+        public RelicManager RelicManager { get; set; }
 
         public IZoneEnterQueueService EnterQueueService { get; set; }
 
@@ -107,7 +107,7 @@ namespace Perpetuum.Zones
             Listener.Stop();
 
             //Emit stop signal to child services
-            RelicManager?.Stop();
+           // RelicManager?.Stop();
 
             // players
             SaveUnitsToDb<Player>();
