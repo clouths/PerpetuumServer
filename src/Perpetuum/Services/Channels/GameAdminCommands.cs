@@ -786,6 +786,7 @@ namespace Perpetuum.Services.Channels
 
                 string cmd = string.Format("{0}:relay:{1}", Commands.ExtensionFreeAllLockedEpCommand.Text, GenxyConverter.Serialize(dictionary));
                 request.Session.HandleLocalRequest(request.Session.CreateLocalRequest(cmd));
+                channel.SendMessageToAll(sessionManager, sender, "unlockallep: " + dictionary.ToDebugString());
             }
 
             //EPBonusCommands
@@ -808,6 +809,65 @@ namespace Perpetuum.Services.Channels
                 string cmd = string.Format("{0}:relay:{1}", Commands.EPBonusSet.Text, GenxyConverter.Serialize(dictionary));
                 request.Session.HandleLocalRequest(request.Session.CreateLocalRequest(cmd));
                 channel.SendMessageToAll(sessionManager, sender, "EP Bonus Set with command: " + dictionary.ToDebugString());
+            }
+
+
+
+            //SpawnRelics by command
+            if (command[0] == "#spawnrelic")
+            {
+                bool err = false;
+
+                var character = request.Session.Character;
+                var zone = request.Session.ZoneMgr.GetZone((int)character.ZoneId);
+                var player = zone.GetPlayer(character.ActiveRobotEid);
+
+                var terrainLock = player.GetPrimaryLock() as TerrainLock;
+                int x, y, zoneid;
+
+                if (terrainLock == null)
+                {
+                    err = !int.TryParse(command[1], out int xCommand);
+                    err = !int.TryParse(command[2], out int yCommand);
+                    err = !int.TryParse(command[3], out int zoneCommand);
+                    if (err)
+                    {
+                        channel.SendMessageToAll(sessionManager, sender, "Bad args");
+                        throw PerpetuumException.Create(ErrorCodes.RequiredArgumentIsNotSpecified);
+                    }
+                    x = xCommand;
+                    y = yCommand;
+                    zoneid = zoneCommand;
+                    zone = request.Session.ZoneMgr.GetZone((int)zoneid);
+                    if (zone == null)
+                    {
+                        channel.SendMessageToAll(sessionManager, sender, "Bad zone id!");
+                    }
+                }
+                else
+                {
+                    x = terrainLock.Location.intX;
+                    y = terrainLock.Location.intY;
+                    zoneid = zone.Id;
+                }
+
+                bool success = zone.RelicManager.ForceSpawnRelicAt(x, y);
+
+                Dictionary<string, object> dictionary = new Dictionary<string, object>()
+                {
+                    { "x", x },
+                    { "y", y },
+                    {"zoneid", zoneid }
+                };
+                if (success)
+                {
+                    channel.SendMessageToAll(sessionManager, sender, "Spawned relic at: " + dictionary.ToDebugString());
+                }
+                else
+                {
+                    channel.SendMessageToAll(sessionManager, sender, "FAILED to spawn relic at: " + dictionary.ToDebugString());
+                }
+                
             }
 
         }

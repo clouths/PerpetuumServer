@@ -91,6 +91,24 @@ namespace Perpetuum.Services.Relics
             //TODO cleanup if using DB to cache
         }
 
+        public bool ForceSpawnRelicAt(int x, int y)
+        {
+            bool success = false;
+            try
+            {
+                var info = GetNextRelicType();
+                Position position = new Position(x, y);
+                Relic relic = new Relic(0, info, _zone, _zone.GetPosition(position));
+                _relicsOnZone.Add(relic);
+                success = true;
+            }
+            catch(Exception e)
+            {
+                Logger.Warning("Failed to spawn Relic by ForceSpawnRelicAt()");
+            }
+            return success;
+        }
+
         //Relics are just beam locations until a player comes within range of it, then they are awarded the Loot and EP for finding the Relic
         public void CheckNearbyRelics(Player player)
         {
