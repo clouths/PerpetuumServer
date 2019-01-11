@@ -61,16 +61,16 @@ namespace Perpetuum.Modules
             if (zone == null)
                 return;
 
-            Position targetPosition = new Position();
+            Position? posistion = null;
 
             var myLock = GetLock();
             if (myLock is TerrainLock)
             {
-                targetPosition = (myLock as TerrainLock).Location.AddToZ(BLOB_EMITTER_HEIGHT);
+                posistion = (myLock as TerrainLock).Location.AddToZ(BLOB_EMITTER_HEIGHT);
             }
             else if (myLock is UnitLock)
             {
-                targetPosition = (myLock as UnitLock).Target.CurrentPosition.AddToZ(BLOB_EMITTER_HEIGHT);
+                posistion = (myLock as UnitLock).Target.CurrentPosition.AddToZ(BLOB_EMITTER_HEIGHT);
             }
             else
             {
@@ -78,12 +78,13 @@ namespace Perpetuum.Modules
                 return;
             }
 
-            if(targetPosition.Equals(new Position()))
+            if(posistion == null)
             {
                 OnError(ErrorCodes.InvalidLock);
                 return;
             }
-            
+            Position targetPosition = (Position)posistion;
+
             zone.Units.OfType<BlobEmitterUnit>().WithinRange(targetPosition, BLOB_EMITTER_DEPLOY_RANGE).Any().ThrowIfTrue(ErrorCodes.BlobEmitterInRange);
             var r = zone.IsInLineOfSight(ParentRobot, targetPosition, false);
             if (r.hit)
