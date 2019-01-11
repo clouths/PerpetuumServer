@@ -100,6 +100,7 @@ namespace Perpetuum.Zones
         public override void Start()
         {
             Listener.Start(OnConnectionAccepted);
+            RelicManager.Start();
         }
 
         public override void Stop()
@@ -107,7 +108,7 @@ namespace Perpetuum.Zones
             Listener.Stop();
 
             //Emit stop signal to child services
-           // RelicManager?.Stop();
+            RelicManager.Stop();
 
             // players
             SaveUnitsToDb<Player>();

@@ -46,7 +46,7 @@ namespace Perpetuum.Services.Relics
             var maxspawn = record.GetValue<int>("maxspawn");
             var respawnrate = record.GetValue<int>("respawnrate");
 
-            var config = new RelicZoneConfig(zoneid, maxspawn, TimeSpan.FromSeconds(300));
+            var config = new RelicZoneConfig(zoneid, maxspawn, TimeSpan.FromSeconds(respawnrate));
 
             return config;
         }

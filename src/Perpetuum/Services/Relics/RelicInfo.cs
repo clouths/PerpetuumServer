@@ -11,16 +11,14 @@ namespace Perpetuum.Services.Relics
         private int _id;
         private string _name;
         private int _goalrange;
-        private int? _npcpresence;
         private Position _staticRelicPosistion;
         public bool HasStaticPosistion = false;
 
-        public RelicInfo(int id, string name, int range, int? npcpresenceid)
+        public RelicInfo(int id, string name, int range)
         {
             _id = id;
             _name = name;
             _goalrange = range;
-            _npcpresence = npcpresenceid;
         }
 
         public void SetPosition(Position p)

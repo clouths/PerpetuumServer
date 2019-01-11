@@ -48,7 +48,7 @@ namespace Perpetuum.Services.Relics
             var x = record.GetValue<int?>("x");
             var y = record.GetValue<int?>("y");
 
-            var relicinfos = Db.Query().CommandText("SELECT TOP 1 id, name, goalrange, npcpresenceid FROM relicinfos WHERE id = @relicInfoId")
+            var relicinfos = Db.Query().CommandText("SELECT TOP 1 id, name, goalrange FROM relicinfos WHERE id = @relicInfoId")
                 .SetParameter("@relicInfoId", relicinfoid)
                 .Execute()
                 .Select(CreateRelicInfoFromRecord);
@@ -65,8 +65,7 @@ namespace Perpetuum.Services.Relics
             var id = record.GetValue<int>("id");
             var name = record.GetValue<string>("name");
             var goalrange = record.GetValue<int>("goalrange");
-            var npcpresenceid = record.GetValue<int?>("npcpresenceid");
-            var info = new RelicInfo(id, name, goalrange, npcpresenceid);
+            var info = new RelicInfo(id, name, goalrange);
 
             return info;
         }

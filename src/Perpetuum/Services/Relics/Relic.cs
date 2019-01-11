@@ -123,8 +123,7 @@ namespace Perpetuum.Services.Relics
             var id = record.GetValue<int>("id");
             var name = record.GetValue<string>("name");
             var goalrange = record.GetValue<int>("goalrange");
-            var npcpresenceid = record.GetValue<int?>("npcpresenceid");
-            var info = new RelicInfo(id, name, goalrange, npcpresenceid);
+            var info = new RelicInfo(id, name, goalrange);
 
             return info;
         }
