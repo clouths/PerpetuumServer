@@ -723,7 +723,22 @@ namespace Perpetuum.Zones.NpcSystem
 
             using (var scope = Db.CreateTransaction())
             {
-                LootContainer.Create().SetOwner(tagger).AddLoot(LootGenerator).BuildAndAddToZone(zone, CurrentPosition);
+                if (true) //TODO npc.IsSpecial/or .IsBoss 
+                {
+                    List<Player> participants = new List<Player>();
+                    participants = ThreatManager.Hostiles.Select(x => zone.ToPlayerOrGetOwnerPlayer(x.unit)).ToList();
+                    ISplittableLootGenerator splitLooter = new SplittableLootGenerator(LootGenerator);
+                    List<ILootGenerator> lootGenerators = splitLooter.GetGenerators(participants.Count);
+                    for (var i = 0; i < participants.Count; i++)
+                    {
+                        LootContainer.Create().SetOwner(participants[i]).AddLoot(lootGenerators[i]).BuildAndAddToZone(zone, participants[i].CurrentPosition);
+                    }
+                }
+                else
+                {
+                    LootContainer.Create().SetOwner(tagger).AddLoot(LootGenerator).BuildAndAddToZone(zone, CurrentPosition);
+                }
+
 
                 var killerPlayer = zone.ToPlayerOrGetOwnerPlayer(killer);
 
