@@ -1,5 +1,6 @@
 ﻿using Perpetuum.Data;
 using Perpetuum.Services.Looting;
+using Perpetuum.Timers;
 using Perpetuum.Zones;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,8 @@ namespace Perpetuum.Services.Relics
         private RelicInfo _info;
         private IZone _zone;
         private Position _position;
-        private bool _found;
+        private bool _alive;
+        private TimeTracker _lifeSpan = new TimeTracker(TimeSpan.FromMinutes(2));
 
 
         public Relic(int id, RelicInfo info, IZone zone, Position position)
@@ -25,7 +27,7 @@ namespace Perpetuum.Services.Relics
             _info = info;
             _zone = zone;
             _position = position;
-            _found = false;
+            SetAlive(true);
         }
 
         public RelicInfo GetRelicInfo()
@@ -38,14 +40,23 @@ namespace Perpetuum.Services.Relics
             return this._position;
         }
 
-        public void PopRelic()
+        public void SetAlive(bool isAlive)
         {
-            this._found = true;
+            this._alive = isAlive;
         }
 
-        public bool IsFound()
+        public bool IsAlive()
         {
-            return _found;
+            return _alive;
+        }
+
+        public void Update(TimeSpan elapsed)
+        {
+            _lifeSpan.Update(elapsed);
+            if (_lifeSpan.Expired)
+            {
+                this.SetAlive(false);
+            }
         }
 
     }

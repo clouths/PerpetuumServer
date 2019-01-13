@@ -23,6 +23,12 @@ namespace Perpetuum.Services.Relics
             _random = new Random();
         }
 
+        //Guard loot-loop from empty or low probability loot tables (would indicate bad/missing Relicloot entries)
+        private bool HasValidLoots(IRelicLoot[] loots)
+        {
+            return loots.Length > 0 && (0.1 < loots.Sum(loot => loot.Chance)); 
+        }
+
         public RelicLootItems GenerateLoot(Relic relic)
         {
             var relicInfo = relic.GetRelicInfo();
@@ -31,7 +37,7 @@ namespace Perpetuum.Services.Relics
 
             var loots = _relicRepository.GetRelicLoots(relicInfo).ToArray();
 
-            if (loots.Length <= 0)
+            if (!HasValidLoots(loots))
                 return null;
 
             do

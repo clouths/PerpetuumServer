@@ -2400,8 +2400,7 @@ namespace Perpetuum.Bootstrapper
             _builder.RegisterType<SettingsLoader>();
             _builder.RegisterType<PlantRuleLoader>();
 
-            _builder.RegisterType<RelicManager>(); //TODO new relic manager
-
+            _builder.RegisterType<RelicManager>(); //NEW RELIC MANAGER
 
             _builder.Register<Func<ZoneConfiguration, IZone>>(x =>
             {
@@ -2427,7 +2426,7 @@ namespace Perpetuum.Bootstrapper
                     zone.Environment = ctx.Resolve<ZoneEnvironmentHandler>(new TypedParameter(typeof(IZone), zone));
                     zone.SafeSpawnPoints = ctx.Resolve<ISafeSpawnPointsRepository>(new TypedParameter(typeof(IZone), zone));
                     zone.ZoneSessionFactory = ctx.Resolve<ZoneSession.Factory>();
-                    zone.RelicManager = ctx.Resolve<RelicManager>(new TypedParameter(typeof(IZone), zone));//TODO new relic manager
+                    zone.RelicManager = ctx.Resolve<RelicManager>(new TypedParameter(typeof(IZone), zone)); //NEW RELIC MANAGER
 
                     if (configuration.Terraformable)
                     {

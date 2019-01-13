@@ -823,10 +823,16 @@ namespace Perpetuum.Services.Channels
                 var player = zone.GetPlayer(character.ActiveRobotEid);
 
                 var terrainLock = player.GetPrimaryLock() as TerrainLock;
+                
                 int x, y, zoneid;
 
                 if (terrainLock == null)
                 {
+                    if (command.Length != 4)
+                    {
+                        channel.SendMessageToAll(sessionManager, sender, "Bad args");
+                        throw PerpetuumException.Create(ErrorCodes.RequiredArgumentIsNotSpecified);
+                    }
                     err = !int.TryParse(command[1], out int xCommand);
                     err = !int.TryParse(command[2], out int yCommand);
                     err = !int.TryParse(command[3], out int zoneCommand);
