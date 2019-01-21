@@ -1,54 +1,54 @@
-﻿using Perpetuum.Threading.Process;
-using Perpetuum.Zones;
+﻿using Perpetuum.Zones;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Perpetuum.Services.RiftSystem;
 using Perpetuum.Services.Looting;
 using System.Drawing;
-using Perpetuum.Items;
-using Perpetuum.EntityFramework;
 using Perpetuum.ExportedTypes;
 using System.Threading;
 using Perpetuum.Threading;
 using Perpetuum.Log;
-using Perpetuum.Timers;
 using Perpetuum.Players;
 using Perpetuum.Data;
-using System.Transactions;
 using Perpetuum.Zones.Beams;
-using Perpetuum.Units;
 
 namespace Perpetuum.Services.Relics
 {
     public class RelicManager
     {
+        //Constants
+        private const double ACTIVATION_RANGE = 3; //30m
+        private const double RESPAWN_PROXIMITY = 10.0 * ACTIVATION_RANGE;
+        private readonly TimeSpan RESPAWN_RANDOM_WINDOW = TimeSpan.FromHours(1);
+        private readonly TimeSpan THREAD_TIMEOUT = TimeSpan.FromSeconds(4);
 
         private IZone _zone;
         private RiftSpawnPositionFinder _spawnPosFinder;
-
-        private readonly TimeSpan _respawnRate = TimeSpan.FromMinutes(1);
-        private readonly TimeSpan _relicLifeSpan = TimeSpan.FromMinutes(2);
-        private readonly TimeSpan _relicRefreshRate = TimeSpan.FromSeconds(19.9);
         private ReaderWriterLockSlim _lock;
-        private readonly TimeSpan THREAD_TIMEOUT = TimeSpan.FromSeconds(4);
+        private Random _random;
 
+        private int _max_relics = 0;
+        private IEnumerable<RelicSpawnInfo> _spawnInfos;
 
+        private readonly TimeSpan _respawnRate = TimeSpan.FromHours(3);
+        private readonly TimeSpan _relicLifeSpan = TimeSpan.FromDays(3);
+        private readonly TimeSpan _relicRefreshRate = TimeSpan.FromSeconds(19.9);
+
+        //Cache of Relics
         private List<Relic> _relicsOnZone = new List<Relic>();
 
+        //DB-accessing objects
         private RelicZoneConfigRepository relicZoneConfigRepository;
         private RelicSpawnInfoRepository relicSpawnInfoRepository;
         private RelicLootGenerator relicLootGenerator;
         private RelicRepository relicRepository;
 
-        private int _max_relics = 0;
-        private const double SPAWN_PROXIMITY_FACTOR = 10.0; //Note: activation proximities should be small
-        private IEnumerable<RelicSpawnInfo> _spawnInfos;
-
-        private Random _random;
-
+        //Timers for update
+        private TimeSpan _refreshElapsed;
+        private TimeSpan _respawnElapsed;
+        private TimeSpan _respawnRandomized;
 
         public RelicManager(IZone zone)
         {
@@ -70,9 +70,17 @@ namespace Perpetuum.Services.Relics
             var config = relicZoneConfigRepository.GetZoneConfig();
             _max_relics = config.GetMax();
             _respawnRate = config.GetTimeSpan();
+            _respawnRandomized = RollNextSpawnTime();
 
             _spawnInfos = relicSpawnInfoRepository.GetAll();
+        }
 
+        private TimeSpan RollNextSpawnTime()
+        {
+            var randomFactor = _random.NextDouble() - 0.5;
+            var minutesToAdd = RESPAWN_RANDOM_WINDOW.TotalMinutes * randomFactor;
+
+            return _respawnRate.Add(TimeSpan.FromSeconds(minutesToAdd));
         }
 
         public void Start()
@@ -98,6 +106,10 @@ namespace Perpetuum.Services.Relics
             try
             {
                 var info = GetNextRelicType();
+                if (info == null)
+                {
+                    return false;
+                }
                 Position position = new Position(x, y);
                 Relic relic = new Relic(0, info, _zone, _zone.GetPosition(position));
                 using (_lock.Write(THREAD_TIMEOUT))
@@ -122,7 +134,7 @@ namespace Perpetuum.Services.Relics
             {
                 foreach (Relic r in _relicsOnZone)
                 {
-                    if (r.GetPosition().TotalDistance3D(player.CurrentPosition) < r.GetRelicInfo().GetActivationRange() && r.IsAlive())
+                    if (r.GetPosition().TotalDistance3D(player.CurrentPosition) < ACTIVATION_RANGE && r.IsAlive())
                     {
                         relicInRange = r;
                         break;
@@ -136,7 +148,8 @@ namespace Perpetuum.Services.Relics
 
             //Compute things before getting lock
             //Compute EP
-            var ep = _zone.Configuration.IsBeta ? 10 : 5;
+            var ep = relicInRange.GetRelicInfo().GetEP();
+            if (_zone.Configuration.Type == ZoneType.Pvp) ep *= 2;
             if (_zone.Configuration.Type == ZoneType.Training) ep = 0;
 
             //Compute loots
@@ -206,7 +219,7 @@ namespace Perpetuum.Services.Relics
                 var maxAttempts = 100;
                 var attempts = 0;
                 RelicInfo info = null;
-                while (info == null)
+                while (info == null && _spawnInfos != null)
                 {
                     info = GetNextRelicType();
                     if (info.HasStaticPosistion) //The selected Relic type is static!  We must check if another relic is in this location
@@ -214,7 +227,7 @@ namespace Perpetuum.Services.Relics
                         Point point = info.GetPosition();
                         foreach (var r in _relicsOnZone)
                         {
-                            if (r.GetRelicInfo().GetActivationRange() * SPAWN_PROXIMITY_FACTOR > point.Distance(r.GetPosition()))
+                            if (RESPAWN_PROXIMITY > point.Distance(r.GetPosition()))
                             {
                                 info = null; //We cannot spawn this type because another relic (possibly of the same type) is already present near this location
                                 break;
@@ -240,7 +253,7 @@ namespace Perpetuum.Services.Relics
                     spatialConflict = false;
                     foreach (var r in _relicsOnZone)
                     {
-                        if (r.GetRelicInfo().GetActivationRange() * SPAWN_PROXIMITY_FACTOR > pt.Distance(r.GetPosition()))
+                        if (RESPAWN_PROXIMITY > pt.Distance(r.GetPosition()))
                         {
                             spatialConflict = true;
                             break;
@@ -307,8 +320,6 @@ namespace Perpetuum.Services.Relics
             _relicsOnZone.RemoveAll(r => !r.IsAlive());
         }
 
-        private TimeSpan _refreshElapsed;
-        private TimeSpan _respawnElapsed;
         public void Update(TimeSpan time)
         {
             using (_lock.Write(THREAD_TIMEOUT))
@@ -325,11 +336,12 @@ namespace Perpetuum.Services.Relics
                 _refreshElapsed = TimeSpan.Zero;
 
                 //check if time to spawn a new Relic
-                if (_respawnElapsed > _respawnRate)
+                if (_respawnElapsed > _respawnRandomized)
                 {
                     if (_relicsOnZone.Count < _max_relics)
                     {
                         SpawnRelic();
+                        _respawnRandomized = RollNextSpawnTime();
                     }
                     _respawnElapsed = TimeSpan.Zero;
                 }

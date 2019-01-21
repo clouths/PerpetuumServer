@@ -105,7 +105,7 @@ namespace Perpetuum.Services.Relics
         public IEnumerable<IRelicLoot> GetRelicLoots(RelicInfo info)
         {
             var loots = Db.Query().CommandText("SELECT definition,minquantity,maxquantity,chance,relicinfoid,packed FROM relicloots WHERE relicinfoid = @relicInfoId")
-                .SetParameter("@relicInfoId", info.getID())
+                .SetParameter("@relicInfoId", info.GetID())
                 .Execute()
                 .Select(CreateRelicLootFromRecord);
 
@@ -128,17 +128,6 @@ namespace Perpetuum.Services.Relics
             _zone = zone;
         }
 
-
-        protected RelicInfo CreateRelicInfoFromRecord(IDataRecord record)
-        {
-            var id = record.GetValue<int>("id");
-            var name = record.GetValue<string>("name");
-            var goalrange = record.GetValue<int>("goalrange");
-            var info = new RelicInfo(id, name, goalrange);
-
-            return info;
-        }
-
         protected Relic CreateRelicFromRecord(IDataRecord record)
         {
             var id = record.GetValue<int>("id");
@@ -147,12 +136,7 @@ namespace Perpetuum.Services.Relics
             var x = record.GetValue<int>("x");
             var y = record.GetValue<int>("y");
 
-            var relicinfos = Db.Query().CommandText("SELECT TOP 1 id, name, goalrange FROM relicinfos WHERE id = @relicInfoId")
-                .SetParameter("@relicInfoId", relicinfoid)
-                .Execute()
-                .Select(CreateRelicInfoFromRecord);
-
-            var info = relicinfos.ToList()[0];//TODO risky
+            var info = RelicInfo.GetByIDFromDB(relicinfoid);
 
             var relic = new Relic(id, info, _zone, new Position(x, y));
 
@@ -163,7 +147,7 @@ namespace Perpetuum.Services.Relics
         {
             var relics = Db.Query().CommandText("SELECT id, relicinfoid, zoneid x, y FROM relics WHERE zoneid = @zoneId AND relicinfoid = @relicInfoId")
                 .SetParameter("@zoneId", _zone.Id)
-                .SetParameter("@relicInfoId", info.getID())
+                .SetParameter("@relicInfoId", info.GetID())
                 .Execute()
                 .Select(CreateRelicFromRecord);
 

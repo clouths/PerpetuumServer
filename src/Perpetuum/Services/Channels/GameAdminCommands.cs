@@ -45,7 +45,7 @@ namespace Perpetuum.Services.Channels
 
                 channel.SendMessageToAll(sessionManager, sender, "Channel must be secured before sending commands.");
                 return;
-            }            
+            }
 
             if (command[0] == "#shutdown")
             {
@@ -106,16 +106,16 @@ namespace Perpetuum.Services.Channels
                 {
                     throw PerpetuumException.Create(ErrorCodes.RequiredArgumentIsNotSpecified);
                 }
-                
+
                 // get the target character's session.
-                var charactersession = sessionManager.GetByCharacter(characterID);    
+                var charactersession = sessionManager.GetByCharacter(characterID);
 
                 if (charactersession.Character.ZoneId == null)
                 {
                     channel.SendMessageToAll(sessionManager, sender, string.Format("ERR: Character with ID {0} does not have a zone. Are they docked?", characterID));
                     return;
                 }
-                
+
                 // get destination zone.
                 var zone = request.Session.ZoneMgr.GetZone(zoneID);
 
@@ -609,7 +609,7 @@ namespace Perpetuum.Services.Channels
                 channel.SendMessageToAll(sessionManager, sender, string.Format("Gave Item {0} ", definition));
             }
 
- 
+
             if (command[0] == "#getlockedtileproperties")
             {
 
@@ -618,7 +618,7 @@ namespace Perpetuum.Services.Channels
                 var player = zone.GetPlayer(character.ActiveRobotEid);
 
                 var lockedtile = player.GetPrimaryLock();
-                
+
                 TerrainControlInfo ti = zone.Terrain.Controls.GetValue((lockedtile as TerrainLock).Location);
 
                 channel.SendMessageToAll(sessionManager, sender, string.Format("Tile at {0},{1} has the following flags..", (lockedtile as TerrainLock).Location.X, (lockedtile as TerrainLock).Location.Y));
@@ -726,7 +726,7 @@ namespace Perpetuum.Services.Channels
                 var c = sessionManager.GetByCharacter(characterid);
 
                 channelmanager.JoinChannel(channel.Name, c.Character, ChannelMemberRole.Operator, string.Empty);
-                
+
                 channel.SendMessageToAll(sessionManager, sender, string.Format("Added character {0} to channel ", c.Character.Nick));
 
             }
@@ -823,7 +823,7 @@ namespace Perpetuum.Services.Channels
                 var player = zone.GetPlayer(character.ActiveRobotEid);
 
                 var terrainLock = player.GetPrimaryLock() as TerrainLock;
-                
+
                 int x, y, zoneid;
 
                 if (terrainLock == null)
@@ -857,23 +857,29 @@ namespace Perpetuum.Services.Channels
                     zoneid = zone.Id;
                 }
 
-                bool success = zone.RelicManager.ForceSpawnRelicAt(x, y);
-
                 Dictionary<string, object> dictionary = new Dictionary<string, object>()
                 {
                     { "x", x },
                     { "y", y },
                     {"zoneid", zoneid }
                 };
-                if (success)
+                if (zone.RelicManager != null)
                 {
-                    channel.SendMessageToAll(sessionManager, sender, "Spawned relic at: " + dictionary.ToDebugString());
+                    bool success = zone.RelicManager.ForceSpawnRelicAt(x, y);
+                    if (success)
+                    {
+                        channel.SendMessageToAll(sessionManager, sender, "Spawned relic at: " + dictionary.ToDebugString());
+                    }
+                    else
+                    {
+                        channel.SendMessageToAll(sessionManager, sender, "FAILED to spawn relic at: " + dictionary.ToDebugString());
+                    }
                 }
                 else
                 {
-                    channel.SendMessageToAll(sessionManager, sender, "FAILED to spawn relic at: " + dictionary.ToDebugString());
+                    channel.SendMessageToAll(sessionManager, sender, "This zone does NOT support relics!");
                 }
-                
+
             }
 
         }

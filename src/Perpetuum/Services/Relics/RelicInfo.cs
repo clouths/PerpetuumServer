@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Perpetuum.Data;
+using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,17 +10,39 @@ namespace Perpetuum.Services.Relics
 {
     public class RelicInfo
     {
+        public static RelicInfo CreateRelicInfoFromRecord(IDataRecord record)
+        {
+            var id = record.GetValue<int>("id");
+            var name = record.GetValue<string>("name");
+            var ep = record.GetValue<int>("ep");
+            var info = new RelicInfo(id, name, ep);
+
+            return info;
+        }
+
+        public static RelicInfo GetByIDFromDB(int id)
+        {
+            var relicinfos = Db.Query().CommandText("SELECT TOP 1 id, name, ep FROM relicinfos WHERE id = @relicInfoId")
+                .SetParameter("@relicInfoId", id)
+                .Execute()
+                .Select(CreateRelicInfoFromRecord);
+
+            var info = relicinfos.ToList()[0];//TODO risky?
+            return info;
+        }
+
+
         private int _id;
         private string _name;
-        private int _goalrange;
+        private int _ep;
         private Position _staticRelicPosistion;
         public bool HasStaticPosistion = false;
 
-        public RelicInfo(int id, string name, int range)
+        public RelicInfo(int id, string name, int ep)
         {
             _id = id;
             _name = name;
-            _goalrange = range;
+            _ep = ep;
         }
 
         public void SetPosition(Position p)
@@ -32,12 +56,12 @@ namespace Perpetuum.Services.Relics
             return _staticRelicPosistion;
         }
 
-        public int GetActivationRange()
+        public int GetEP()
         {
-            return this._goalrange;
+            return this._ep;
         }
 
-        public int getID()
+        public int GetID()
         {
             return this._id;
         }

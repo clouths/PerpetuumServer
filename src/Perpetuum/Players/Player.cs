@@ -623,7 +623,7 @@ namespace Perpetuum.Players
             {
                 _running_query = true;
                 //Query relicmanager for nearby relics - pop relic and award to player if in range
-                Task.Run(() => Zone.RelicManager.CheckNearbyRelics(this)).ContinueWith(a => _running_query = false);
+                Task.Run(() => Zone.RelicManager?.CheckNearbyRelics(this)).ContinueWith(a => _running_query = false);
             }
 
             if (zone.Configuration.Protected)
