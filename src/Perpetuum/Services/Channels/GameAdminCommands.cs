@@ -812,7 +812,7 @@ namespace Perpetuum.Services.Channels
             }
 
 
-
+#if DEBUG
             //SpawnRelics by command
             if (command[0] == "#spawnrelic")
             {
@@ -881,6 +881,7 @@ namespace Perpetuum.Services.Channels
                 }
 
             }
+#endif
 
         }
     }

@@ -14,15 +14,17 @@ namespace Perpetuum.Services.Relics
         {
             var id = record.GetValue<int>("id");
             var name = record.GetValue<string>("name");
-            var ep = record.GetValue<int>("ep");
-            var info = new RelicInfo(id, name, ep);
+            var raceid = record.GetValue<int?>("raceid");
+            var level = record.GetValue<int?>("level");
+            var ep = record.GetValue<int?>("ep");
+            var info = new RelicInfo(id, name, raceid, level, ep);
 
             return info;
         }
 
         public static RelicInfo GetByIDFromDB(int id)
         {
-            var relicinfos = Db.Query().CommandText("SELECT TOP 1 id, name, ep FROM relicinfos WHERE id = @relicInfoId")
+            var relicinfos = Db.Query().CommandText("SELECT TOP 1 id, name, raceid, level, ep FROM relicinfos WHERE id = @relicInfoId")
                 .SetParameter("@relicInfoId", id)
                 .Execute()
                 .Select(CreateRelicInfoFromRecord);
@@ -34,15 +36,29 @@ namespace Perpetuum.Services.Relics
 
         private int _id;
         private string _name;
-        private int _ep;
+        private int? _raceid;
+        private int? _level;
+        private int? _ep;
         private Position _staticRelicPosistion;
         public bool HasStaticPosistion = false;
 
-        public RelicInfo(int id, string name, int ep)
+        public RelicInfo(int id, string name, int? raceid, int? level, int? ep)
         {
             _id = id;
             _name = name;
             _ep = ep;
+            _raceid = raceid;
+            _level = level;
+        }
+
+        public int GetLevel()
+        {
+            return this._level ?? 0;
+        }
+
+        public int GetFaction()
+        {
+            return this._raceid ?? 0;
         }
 
         public void SetPosition(Position p)
@@ -58,7 +74,7 @@ namespace Perpetuum.Services.Relics
 
         public int GetEP()
         {
-            return this._ep;
+            return this._ep ?? 5;
         }
 
         public int GetID()

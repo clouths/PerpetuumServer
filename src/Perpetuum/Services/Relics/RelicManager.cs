@@ -34,7 +34,7 @@ namespace Perpetuum.Services.Relics
 
         private readonly TimeSpan _respawnRate = TimeSpan.FromHours(3);
         private readonly TimeSpan _relicLifeSpan = TimeSpan.FromDays(3);
-        private readonly TimeSpan _relicRefreshRate = TimeSpan.FromSeconds(19.9);
+        private readonly TimeSpan _relicRefreshRate = TimeSpan.FromSeconds(19.95);
 
         //Cache of Relics
         private List<Relic> _relicsOnZone = new List<Relic>();
@@ -290,23 +290,45 @@ namespace Perpetuum.Services.Relics
 
         private void RefreshBeam(Relic relic)
         {
+            var level = relic.GetRelicInfo().GetLevel();
+            var faction = relic.GetRelicInfo().GetFaction();
+            var factionalBeamType = BeamType.orange_20sec;
+            switch (faction)
+            {
+                case 0:
+                    factionalBeamType = BeamType.orange_20sec;
+                    break;
+                case 1:
+                    factionalBeamType = BeamType.green_20sec;
+                    break;
+                case 2:
+                    factionalBeamType = BeamType.blue_20sec;
+                    break;
+                case 3:
+                    factionalBeamType = BeamType.red_20sec;
+                    break;
+                default:
+                    factionalBeamType = BeamType.orange_20sec;
+                    break;
+            }
+
+
             var p = _zone.FixZ(relic.GetPosition());
             var beamBuilder = Beam.NewBuilder().WithType(BeamType.artifact_radar).WithTargetPosition(relic.GetPosition())
                 .WithState(BeamState.AlignToTerrain)
                 .WithDuration(_relicRefreshRate);
             _zone.CreateBeam(beamBuilder);
-            beamBuilder = Beam.NewBuilder().WithType(BeamType.blue_20sec).WithTargetPosition(relic.GetPosition())
-               .WithState(BeamState.AlignToTerrain)
-               .WithDuration(_relicRefreshRate);
-            _zone.CreateBeam(beamBuilder);
-            beamBuilder = Beam.NewBuilder().WithType(BeamType.green_20sec).WithTargetPosition(p.AddToZ(5.0))
-                .WithState(BeamState.Hit)
-                .WithDuration(_relicRefreshRate);
-            _zone.CreateBeam(beamBuilder);
             beamBuilder = Beam.NewBuilder().WithType(BeamType.nature_effect).WithTargetPosition(relic.GetPosition())
                 .WithState(BeamState.AlignToTerrain)
                 .WithDuration(_relicRefreshRate);
-            _zone.CreateBeam(beamBuilder);
+                _zone.CreateBeam(beamBuilder);
+            for (var i =0; i<level; i++)
+            {
+                beamBuilder = Beam.NewBuilder().WithType(factionalBeamType).WithTargetPosition(p.AddToZ(3.5*i+1.0))
+                    .WithState(BeamState.Hit)
+                    .WithDuration(_relicRefreshRate);
+                    _zone.CreateBeam(beamBuilder);
+            }
         }
 
         private void UpdateRelics(TimeSpan elapsed)
