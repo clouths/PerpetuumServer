@@ -18,7 +18,7 @@ namespace Perpetuum.Services.Relics
         private IZone _zone;
         private Position _position;
         private bool _alive;
-        private TimeTracker _lifeSpan = new TimeTracker(TimeSpan.FromMinutes(2));
+        private TimeTracker _lifeSpan = new TimeTracker(TimeSpan.FromDays(3));
 
 
         public Relic(int id, RelicInfo info, IZone zone, Position position)

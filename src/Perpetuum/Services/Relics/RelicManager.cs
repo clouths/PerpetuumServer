@@ -33,7 +33,6 @@ namespace Perpetuum.Services.Relics
         private IEnumerable<RelicSpawnInfo> _spawnInfos;
 
         private readonly TimeSpan _respawnRate = TimeSpan.FromHours(3);
-        private readonly TimeSpan _relicLifeSpan = TimeSpan.FromDays(3);
         private readonly TimeSpan _relicRefreshRate = TimeSpan.FromSeconds(19.95);
 
         //Cache of Relics
