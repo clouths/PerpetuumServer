@@ -59,12 +59,6 @@ namespace Perpetuum.Services.Looting
             _despawnHelper.CanApplyDespawnEffect = OnCanApplyDespawnEffect;
         }
 
-        public void ResetDespawnTime(TimeSpan time)
-        {
-            _despawnHelper.ClearEffect(this);
-            SetDespawnTime(time);
-        }
-
         public override void AcceptVisitor(IEntityVisitor visitor)
         {
             if (!TryAcceptVisitor(this, visitor))
@@ -82,7 +76,7 @@ namespace Perpetuum.Services.Looting
             get { return ErrorCodes.TargetIsNonAttackable; }
         }
 
-        protected bool OnCanApplyDespawnEffect(Unit unit)
+        private bool OnCanApplyDespawnEffect(Unit unit)
         {
             return _looters.Count > 0;
         }
@@ -459,19 +453,19 @@ namespace Perpetuum.Services.Looting
 
         public class LootContainerBuilder
         {
-            protected static readonly Dictionary<LootContainerType, string> _containerTypeToName = new Dictionary<LootContainerType, string>
+            private static readonly Dictionary<LootContainerType, string> _containerTypeToName = new Dictionary<LootContainerType, string>
             {
                 {LootContainerType.LootOnly,DefinitionNames.LOOT_CONTAINER_OBJECT},
                 {LootContainerType.Field,DefinitionNames.FIELD_CONTAINER},
                 {LootContainerType.Mission,DefinitionNames.MISSION_CONTAINER}
             };
 
-            protected readonly List<LootItem> _lootItems = new List<LootItem>();
+            private readonly List<LootItem> _lootItems = new List<LootItem>();
 
-            protected LootContainerType _containerType;
-            protected Player _ownerPlayer;
-            protected int _pinCode;
-            protected BeamType _enterBeamType;
+            private LootContainerType _containerType;
+            private Player _ownerPlayer;
+            private int _pinCode;
+            private BeamType _enterBeamType;
 
             internal LootContainerBuilder()
             {
