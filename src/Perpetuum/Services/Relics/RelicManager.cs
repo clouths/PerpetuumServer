@@ -7,8 +7,6 @@ using Perpetuum.Services.RiftSystem;
 using Perpetuum.Services.Looting;
 using System.Drawing;
 using Perpetuum.ExportedTypes;
-using System.Threading;
-using Perpetuum.Threading;
 using Perpetuum.Log;
 using Perpetuum.Players;
 using Perpetuum.Data;
@@ -22,11 +20,10 @@ namespace Perpetuum.Services.Relics
         private const double ACTIVATION_RANGE = 3; //30m
         private const double RESPAWN_PROXIMITY = 10.0 * ACTIVATION_RANGE;
         private readonly TimeSpan RESPAWN_RANDOM_WINDOW = TimeSpan.FromHours(1);
-        private readonly TimeSpan THREAD_TIMEOUT = TimeSpan.FromSeconds(4);
 
         private IZone _zone;
         private RiftSpawnPositionFinder _spawnPosFinder;
-        private ReaderWriterLockSlim _lock;
+        private readonly object _lock = new object();
         private Random _random;
 
         private int _max_relics = 0;
@@ -52,7 +49,6 @@ namespace Perpetuum.Services.Relics
         public RelicManager(IZone zone)
         {
             _random = new Random();
-            _lock = new ReaderWriterLockSlim();
             _zone = zone;
             _spawnPosFinder = new PveRiftSpawnPositionFinder(zone);
             if (zone.Configuration.Terraformable)
@@ -85,7 +81,7 @@ namespace Perpetuum.Services.Relics
         public void Start()
         {
             //Inject max relics on first start
-            using (_lock.Write(THREAD_TIMEOUT))
+            lock (_lock)
             {
                 while (_relicsOnZone.Count < _max_relics)
                 {
@@ -111,7 +107,7 @@ namespace Perpetuum.Services.Relics
                 }
                 Position position = new Position(x, y);
                 Relic relic = new Relic(0, info, _zone, _zone.GetPosition(position));
-                using (_lock.Write(THREAD_TIMEOUT))
+                lock (_lock)
                 {
                     _relicsOnZone.Add(relic);
                     success = true;
@@ -128,7 +124,7 @@ namespace Perpetuum.Services.Relics
         public void CheckNearbyRelics(Player player)
         {
             Relic relicInRange = null;
-            using (_lock.Write(THREAD_TIMEOUT))
+            lock (_lock)
             {
                 foreach (Relic r in _relicsOnZone)
                 {
@@ -208,69 +204,66 @@ namespace Perpetuum.Services.Relics
 
         private void SpawnRelic()
         {
-            using (var scope = Db.CreateTransaction())
+            //Get Next Relictype based on the distribution of their probabilities on this zone
+            var maxAttempts = 100;
+            var attempts = 0;
+            RelicInfo info = null;
+            while (info == null && _spawnInfos != null)
             {
-                //Get Next Relictype based on the distribution of their probabilities on this zone
-                var maxAttempts = 100;
-                var attempts = 0;
-                RelicInfo info = null;
-                while (info == null && _spawnInfos != null)
+                info = GetNextRelicType();
+                if (info.HasStaticPosistion) //The selected Relic type is static!  We must check if another relic is in this location
                 {
-                    info = GetNextRelicType();
-                    if (info.HasStaticPosistion) //The selected Relic type is static!  We must check if another relic is in this location
+                    Point point = info.GetPosition();
+                    foreach (var r in _relicsOnZone)
                     {
-                        Point point = info.GetPosition();
-                        foreach (var r in _relicsOnZone)
+                        if (RESPAWN_PROXIMITY > point.Distance(r.GetPosition()))
                         {
-                            if (RESPAWN_PROXIMITY > point.Distance(r.GetPosition()))
-                            {
-                                info = null; //We cannot spawn this type because another relic (possibly of the same type) is already present near this location
-                                break;
-                            }
+                            info = null; //We cannot spawn this type because another relic (possibly of the same type) is already present near this location
+                            break;
                         }
                     }
+                }
+                attempts++;
+                if (attempts > maxAttempts)
+                    break;
+            }
+
+            if (info == null)
+            {
+                Logger.Error("Could not get RelicInfo for next Relic on Zone: " + _zone.Id);
+                return;
+            }
+
+            attempts = 0;
+            var spatialConflict = true;
+            Point pt = FindRelicPosition(info);
+            while (spatialConflict)
+            {
+                spatialConflict = false;
+                foreach (var r in _relicsOnZone)
+                {
+                    if (RESPAWN_PROXIMITY > pt.Distance(r.GetPosition()))
+                    {
+                        spatialConflict = true;
+                        break;
+                    }
+                }
+                if (spatialConflict)
+                {
+                    pt = _spawnPosFinder.FindSpawnPosition();
                     attempts++;
                     if (attempts > maxAttempts)
                         break;
                 }
-
-                if (info == null)
-                {
-                    Logger.Error("Could not get RelicInfo for next Relic on Zone: " + _zone.Id);
-                    return;
-                }
-
-                attempts = 0;
-                var spatialConflict = true;
-                Point pt = FindRelicPosition(info);
-                while (spatialConflict)
-                {
-                    spatialConflict = false;
-                    foreach (var r in _relicsOnZone)
-                    {
-                        if (RESPAWN_PROXIMITY > pt.Distance(r.GetPosition()))
-                        {
-                            spatialConflict = true;
-                            break;
-                        }
-                    }
-                    if (spatialConflict)
-                    {
-                        pt = _spawnPosFinder.FindSpawnPosition();
-                        attempts++;
-                        if (attempts > maxAttempts)
-                            break;
-                    }
-                }
-                if (attempts > maxAttempts)
-                {
-                    Logger.Error("Could not get Position for next Relic on Zone: " + _zone.Id);
-                    return;
-                }
-                Position position = pt.ToPosition();
-                Relic relic = new Relic(0, info, _zone, _zone.GetPosition(position));
-                _relicsOnZone.Add(relic);
             }
+            if (attempts > maxAttempts)
+            {
+                Logger.Error("Could not get Position for next Relic on Zone: " + _zone.Id);
+                return;
+            }
+            Position position = pt.ToPosition();
+            Relic relic = new Relic(0, info, _zone, _zone.GetPosition(position));
+            _relicsOnZone.Add(relic);
         }
 
         private void RefreshBeam(Relic relic)
@@ -329,7 +322,7 @@ namespace Perpetuum.Services.Relics
 
         public void Update(TimeSpan time)
         {
-            using (_lock.Write(THREAD_TIMEOUT))
+            lock (_lock)
             {
                 //Minimum tick rate
                 _refreshElapsed += time;
