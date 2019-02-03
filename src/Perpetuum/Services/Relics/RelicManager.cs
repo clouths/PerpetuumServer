@@ -158,6 +158,10 @@ namespace Perpetuum.Services.Relics
 
             using (_lock.Write(THREAD_TIMEOUT))
             {
+                //Someone else got it first - We could be holding a reference to a relic just found by another
+                if (!relicInRange.IsAlive())
+                    return;
+
                 //Set flag on relic for removal
                 relicInRange.SetAlive(false);
 
@@ -277,16 +281,6 @@ namespace Perpetuum.Services.Relics
             }
         }
 
-
-        private void UpdateBeams()
-        {
-            foreach (Relic r in _relicsOnZone)
-            {
-                RefreshBeam(r);
-            }
-        }
-
-
         private void RefreshBeam(Relic relic)
         {
             var level = relic.GetRelicInfo().GetLevel();
@@ -320,13 +314,13 @@ namespace Perpetuum.Services.Relics
             beamBuilder = Beam.NewBuilder().WithType(BeamType.nature_effect).WithTargetPosition(relic.GetPosition())
                 .WithState(BeamState.AlignToTerrain)
                 .WithDuration(_relicRefreshRate);
-                _zone.CreateBeam(beamBuilder);
-            for (var i =0; i<level; i++)
+            _zone.CreateBeam(beamBuilder);
+            for (var i = 0; i < level; i++)
             {
-                beamBuilder = Beam.NewBuilder().WithType(factionalBeamType).WithTargetPosition(p.AddToZ(3.5*i+1.0))
+                beamBuilder = Beam.NewBuilder().WithType(factionalBeamType).WithTargetPosition(p.AddToZ(3.5 * i + 1.0))
                     .WithState(BeamState.Hit)
                     .WithDuration(_relicRefreshRate);
-                    _zone.CreateBeam(beamBuilder);
+                _zone.CreateBeam(beamBuilder);
             }
         }
 
@@ -335,6 +329,7 @@ namespace Perpetuum.Services.Relics
             foreach (Relic r in _relicsOnZone)
             {
                 r.Update(elapsed);
+                RefreshBeam(r);
             }
 
             //Remove all expired relics
@@ -350,7 +345,7 @@ namespace Perpetuum.Services.Relics
                 if (_refreshElapsed < _relicRefreshRate)
                     return;
 
-                //Update Relic lifespans and expire
+                //Update Relic lifespans, refresh beams and expire
                 UpdateRelics(_refreshElapsed);
 
                 _respawnElapsed += _refreshElapsed;
@@ -367,13 +362,6 @@ namespace Perpetuum.Services.Relics
                     _respawnElapsed = TimeSpan.Zero;
                 }
             }
-
-            //Update beams - readonly
-            using (_lock.Read(THREAD_TIMEOUT))
-            {
-                UpdateBeams();
-            }
         }
-
     }
 }
