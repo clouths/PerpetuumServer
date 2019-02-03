@@ -18,7 +18,6 @@ using Perpetuum.Players;
 using Perpetuum.Players.ExtensionMethods;
 using Perpetuum.Robots;
 using Perpetuum.Services.MissionEngine.MissionTargets;
-using Perpetuum.Services.Relics;
 using Perpetuum.Timers;
 using Perpetuum.Units;
 using Perpetuum.Zones;
@@ -322,7 +321,6 @@ namespace Perpetuum.Services.Looting
 
         protected override void OnRemovedFromZone(IZone zone)
         {
-            
             Db.CreateTransactionAsync(scope =>
             {
                 _itemRepository.DeleteAll(this);
