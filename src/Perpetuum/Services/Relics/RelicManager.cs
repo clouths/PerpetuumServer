@@ -127,9 +127,8 @@ namespace Perpetuum.Services.Relics
         //Relics are just beam locations until a player comes within range of it, then they are awarded the Loot and EP for finding the Relic
         public void CheckNearbyRelics(Player player)
         {
-            //Optimization - Readonly-lock for relic in range - bail if nothing found
             Relic relicInRange = null;
-            using (_lock.Read(THREAD_TIMEOUT))
+            using (_lock.Write(THREAD_TIMEOUT))
             {
                 foreach (Relic r in _relicsOnZone)
                 {
@@ -139,27 +138,20 @@ namespace Perpetuum.Services.Relics
                         break;
                     }
                 }
-            }
-            if (relicInRange == null)
-            {
-                return;
-            }
+                //Bail if nothing found
+                if (relicInRange == null)
+                {
+                    return;
+                }
 
-            //Compute things before getting lock
-            //Compute EP
-            var ep = relicInRange.GetRelicInfo().GetEP();
-            if (_zone.Configuration.Type == ZoneType.Pvp) ep *= 2;
-            if (_zone.Configuration.Type == ZoneType.Training) ep = 0;
+                //Compute EP
+                var ep = relicInRange.GetRelicInfo().GetEP();
+                if (_zone.Configuration.Type == ZoneType.Pvp) ep *= 2;
+                if (_zone.Configuration.Type == ZoneType.Training) ep = 0;
 
-            //Compute loots
-            var relicLoots = relicLootGenerator.GenerateLoot(relicInRange);
-            if (relicLoots == null)
-                return;
-
-            using (_lock.Write(THREAD_TIMEOUT))
-            {
-                //Someone else got it first - We could be holding a reference to a relic just found by another
-                if (!relicInRange.IsAlive())
+                //Compute loots
+                var relicLoots = relicLootGenerator.GenerateLoot(relicInRange);
+                if (relicLoots == null)
                     return;
 
                 //Set flag on relic for removal
@@ -304,7 +296,6 @@ namespace Perpetuum.Services.Relics
                     factionalBeamType = BeamType.orange_20sec;
                     break;
             }
-
 
             var p = _zone.FixZ(relic.GetPosition());
             var beamBuilder = Beam.NewBuilder().WithType(BeamType.artifact_radar).WithTargetPosition(relic.GetPosition())
